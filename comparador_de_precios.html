@@ -134,6 +134,7 @@ html,body{height:100%}
 <!-- EXPORT -->
 <div id="export-bar">
   <button class="btn btn-blue" onclick="exportarCSV()">💾 Descargar CSV actualizado</button>
+  <button class="btn btn-green" onclick="exportarExcel()">📊 Exportar a Excel</button>
 </div>
 
 <!-- PANEL BAR -->
@@ -781,7 +782,234 @@ function guardarManual() {
   alert('Cambios guardados en el navegador.');
 }
 
-// ── EXPORT CSV ────────────────────────────────────────────────────────────────
+// ── EXPORT EXCEL ──────────────────────────────────────────────────────────────
+function exportarExcel() {
+  if (typeof ExcelJS === 'undefined') {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js';
+    s.onload = () => _generarExcel();
+    document.head.appendChild(s);
+  } else {
+    _generarExcel();
+  }
+}
+
+function _getFilasActuales() {
+  // Replica exactamente el filtro del render()
+  const q = document.getElementById('searchExam').value.trim().toUpperCase();
+  const filtro = document.querySelector('input[name="filtro"]:checked')?.value || 'Todos';
+  const panelVal = (document.getElementById('cbPanel').value || '').trim().toUpperCase();
+  const soloAsoc = document.getElementById('chkAsoc').checked;
+  const mostrarOcultos = document.getElementById('chkOcultos').checked;
+
+  let panelExams = null;
+  let panelName = null;
+  if (panelVal) {
+    for (const k of PANEL_NAMES) {
+      if (k.toUpperCase() === panelVal || k.toUpperCase().includes(panelVal)) {
+        panelName = k; panelExams = new Set(PANEL_MAP[k]); break;
+      }
+    }
+  }
+
+  let rows = df.filter(r => {
+    if (panelExams && !panelExams.has(r.Examen)) return false;
+    if (q && !r.Examen.toUpperCase().includes(q)) return false;
+    if (soloAsoc && !r.Panel_Asociado) return false;
+    const pa = r.Precio_ANDA, pm = r.Precio_MONTES;
+    if (filtro === '↑ Sube' && !(pa!=null&&pm!=null&&pm>pa+0.01)) return false;
+    if (filtro === '↓ Baja' && !(pa!=null&&pm!=null&&pm<pa-0.01)) return false;
+    if (filtro === 'Sin MONTES' && pm!=null) return false;
+    if (filtro === 'Sin ambos' && !(pa==null&&pm==null)) return false;
+    if (filtro === 'Con ambos' && !(pa!=null&&pm!=null)) return false;
+    if (!mostrarOcultos && hiddenSet.has(r.Examen)) return false;
+    if (mostrarOcultos && !hiddenSet.has(r.Examen)) return false;
+    return true;
+  });
+
+  if (panelName) {
+    let pr = df.find(r => r.Examen === panelName);
+    if (!pr) pr = {Examen:panelName, Cantidad_2025:0, Precio_ANDA:null, Precio_MONTES:null, Panel_Asociado:'', Sin_Cotizar:false};
+    // calcular qty del panel
+    const pdVals = PANEL_DESGLOSE[panelName] ? Object.values(PANEL_DESGLOSE[panelName]) : null;
+    pr = {...pr, Cantidad_2025: pdVals ? Math.min(...pdVals) : pr.Cantidad_2025};
+    rows = [pr, ...rows.filter(r => r.Examen !== panelName)];
+  }
+  return {rows, panelName};
+}
+
+function _rowEstado(r, panelName) {
+  const pa = r.Precio_ANDA, pm = r.Precio_MONTES;
+  const isPanel = panelName && r.Examen === panelName;
+  if (isPanel) return 'panel';
+  if (r.Sin_Cotizar) return 'sincot';
+  if (r.Panel_Asociado && !isPanel) return 'asoc';
+  if (!pa && !pm) return 'sinambos';
+  if (!pm) return 'sinm';
+  if (pa==null) return 'sinanda';
+  const d = pm - pa;
+  if (d > 0.01) return 'sube';
+  if (d < -0.01) return 'baja';
+  return 'igual';
+}
+
+async function _generarExcel() {
+  const {rows, panelName} = _getFilasActuales();
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'FertiLab Comparador';
+  wb.created = new Date();
+
+  // Paleta de colores
+  const C = {
+    hdrBg:'1A56A0', hdrFg:'FFFFFF',
+    subeBg:'FFEBEE', subeFg:'C62828',
+    bajaBg:'E8F5E9', bajaFg:'2E7D32',
+    igualFg:'607D8B',
+    sinFg:'E65100',
+    panelBg:'00695C', panelFg:'FFFFFF',
+    asocFg:'1565C0',
+    sincotBg:'FFEBEE', sincotFg:'B71C1C',
+    rowEven:'F5F9FF', rowOdd:'FFFFFF',
+    totalBg:'1A56A0', totalFg:'FFFFFF',
+  };
+
+  function hdrStyle(ws, row) {
+    row.eachCell(cell => {
+      cell.fill = {type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.hdrBg}};
+      cell.font = {bold:true,color:{argb:'FF'+C.hdrFg},size:11};
+      cell.alignment = {vertical:'middle',horizontal:'center',wrapText:false};
+      cell.border = {bottom:{style:'thin',color:{argb:'FFCCCCCC'}}};
+    });
+    row.height = 26;
+  }
+
+  function applyRowStyle(row, estado, idx) {
+    const even = idx % 2 === 0;
+    let bg = even ? C.rowEven : C.rowOdd;
+    let fg = '212121'; let bold = false; let italic = false;
+    if (estado==='panel')   { bg=C.panelBg; fg=C.panelFg; bold=true; }
+    else if (estado==='sube')    { bg=C.subeBg; fg=C.subeFg; bold=true; }
+    else if (estado==='baja')    { bg=C.bajaBg; fg=C.bajaFg; bold=true; }
+    else if (estado==='igual')   { fg=C.igualFg; }
+    else if (estado==='sinm'||estado==='sinanda'||estado==='sinambos') { fg=C.sinFg; italic=true; }
+    else if (estado==='asoc')    { fg=C.asocFg; italic=true; }
+    else if (estado==='sincot')  { bg=C.sincotBg; fg=C.sincotFg; italic=true; }
+    row.eachCell({includeEmpty:true}, cell => {
+      cell.fill = {type:'pattern',pattern:'solid',fgColor:{argb:'FF'+bg}};
+      cell.font = {color:{argb:'FF'+fg}, bold, italic, size:11};
+      cell.alignment = {vertical:'middle', horizontal:'center'};
+      cell.border = {bottom:{style:'hair',color:{argb:'FFE0E0E0'}}};
+    });
+    row.getCell(1).alignment = {vertical:'middle', horizontal:'left'};
+    row.height = 22;
+  }
+
+  // ── Hoja 1: Vista actual ────────────────────────────────────────────────────
+  const ws = wb.addWorksheet('Comparativa', {views:[{state:'frozen',ySplit:1}]});
+  ws.columns = [
+    {key:'examen', width:44}, {key:'qty',width:16},
+    {key:'pa',width:20}, {key:'pm',width:20},
+    {key:'diu',width:18}, {key:'dit',width:18},
+    {key:'est',width:12}
+  ];
+
+  const hdr = ws.addRow(['Examen','Cantidad 2025','Precio ANDA ($U)','Precio MONTES ($U)','Dif. Unitaria ($U)','Dif. Total ($U)','Estado']);
+  hdrStyle(ws, hdr);
+
+  let totA=0, totM=0;
+  rows.forEach((r,idx) => {
+    const pa=r.Precio_ANDA, pm=r.Precio_MONTES, qty=r.Cantidad_2025||0;
+    let diu='',dit='',est='Sin precio';
+    if(pa!=null&&pm!=null){diu=pm-pa;dit=diu*qty;est=diu>0.01?'↑ SUBE':(diu<-0.01?'↓ BAJA':'= IGUAL');}
+    if(pa!=null) totA+=pa*qty;
+    if(pm!=null) totM+=pm*qty;
+    const estado = _rowEstado(r, panelName);
+    const row = ws.addRow([r.Examen, qty,
+      pa!=null?pa:null, pm!=null?pm:null,
+      diu!==''?diu:null, dit!==''?dit:null, est]);
+    // Formato número
+    [3,4,5,6].forEach(c => {
+      const cell = row.getCell(c);
+      if(cell.value!=null) cell.numFmt = '#,##0.00';
+    });
+    applyRowStyle(row, estado, idx);
+  });
+
+  // Fila totales
+  ws.addRow([]);
+  const totRow = ws.addRow(['TOTALES', '', totA, totM, '', totM-totA, '']);
+  totRow.eachCell({includeEmpty:true}, cell => {
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.hdrBg}};
+    cell.font={bold:true,color:{argb:'FF'+C.hdrFg},size:11};
+    cell.alignment={vertical:'middle',horizontal:'center'};
+  });
+  totRow.getCell(1).alignment={vertical:'middle',horizontal:'left'};
+  [3,4,6].forEach(c => { totRow.getCell(c).numFmt='#,##0.00'; });
+  totRow.height=22;
+
+  // AutoFiltro hoja 1
+  ws.autoFilter = { from:{row:1,column:1}, to:{row:1,column:7} };
+
+  // ── Hoja 2: Ocultos ─────────────────────────────────────────────────────────
+  const ws2 = wb.addWorksheet('Ocultos', {views:[{state:'frozen',ySplit:1}]});
+  ws2.columns = [
+    {key:'examen', width:44}, {key:'qty',width:16},
+    {key:'pa',width:20}, {key:'pm',width:20},
+    {key:'diu',width:18}, {key:'dit',width:18},
+    {key:'est',width:12}
+  ];
+
+  const hdr2 = ws2.addRow(['Examen','Cantidad 2025','Precio ANDA ($U)','Precio MONTES ($U)','Dif. Unitaria ($U)','Dif. Total ($U)','Estado']);
+  hdrStyle(ws2, hdr2);
+
+  let totA2=0, totM2=0;
+  const ocultos = df.filter(r => hiddenSet.has(r.Examen));
+  ocultos.forEach((r, idx) => {
+    const pa=r.Precio_ANDA, pm=r.Precio_MONTES, qty=r.Cantidad_2025||0;
+    let diu='',dit='',est='Sin precio';
+    if(pa!=null&&pm!=null){diu=pm-pa;dit=diu*qty;est=diu>0.01?'↑ SUBE':(diu<-0.01?'↓ BAJA':'= IGUAL');}
+    if(pa!=null) totA2+=pa*qty;
+    if(pm!=null) totM2+=pm*qty;
+    const row = ws2.addRow([r.Examen, qty,
+      pa!=null?pa:null, pm!=null?pm:null,
+      diu!==''?diu:null, dit!==''?dit:null, est]);
+    [3,4,5,6].forEach(c => { const cell=row.getCell(c); if(cell.value!=null) cell.numFmt='#,##0.00'; });
+    // Ocultos siempre en gris
+    row.eachCell({includeEmpty:true}, cell => {
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F5F5'}};
+      cell.font={color:{argb:'FF9E9E9E'},italic:true,size:11};
+      cell.alignment={vertical:'middle',horizontal:'center'};
+      cell.border={bottom:{style:'hair',color:{argb:'FFE0E0E0'}}};
+    });
+    row.getCell(1).alignment={vertical:'middle',horizontal:'left'};
+    row.height=22;
+  });
+
+  ws2.addRow([]);
+  const totRow2 = ws2.addRow(['TOTALES', '', totA2, totM2, '', totM2-totA2, '']);
+  totRow2.eachCell({includeEmpty:true}, cell => {
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.hdrBg}};
+    cell.font={bold:true,color:{argb:'FF'+C.hdrFg},size:11};
+    cell.alignment={vertical:'middle',horizontal:'center'};
+  });
+  totRow2.getCell(1).alignment={vertical:'middle',horizontal:'left'};
+  [3,4,6].forEach(c => { totRow2.getCell(c).numFmt='#,##0.00'; });
+  totRow2.height=22;
+
+  ws2.autoFilter = { from:{row:1,column:1}, to:{row:1,column:7} };
+
+  // ── Descargar ────────────────────────────────────────────────────────────────
+  const fecha = new Date().toISOString().slice(0,10);
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Comparativa_ANDA_MONTES_${fecha}.xlsx`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(a.href);
+}
+
+
 function exportarCSV() {
   const cols = ['Examen','Cantidad_2025','Precio_ANDA','Precio_MONTES','Panel_Asociado','Sin_Cotizar'];
   let csv = '\uFEFF' + cols.join(',') + '\r\n';
