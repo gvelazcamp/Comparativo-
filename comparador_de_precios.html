@@ -439,7 +439,9 @@ function render() {
 
   allRows.forEach(r => {
     const isPanel = (currentPanelName && r.Examen === currentPanelName);
-    const pa = r.Precio_ANDA, pm = r.Precio_MONTES, qty = r.Cantidad_2025||0;
+    const pa = r.Precio_ANDA, pm = r.Precio_MONTES;
+    const _pdVals = isPanel && PANEL_DESGLOSE[r.Examen] ? Object.values(PANEL_DESGLOSE[r.Examen]) : null;
+    const qty = (_pdVals && _pdVals.length) ? Math.min(..._pdVals) : (r.Cantidad_2025||0);
     const paS = pa != null ? `$U ${fmt(pa)}` : '(sin precio)';
     const pmS = pm != null ? `$U ${fmt(pm)}` : '(sin precio)';
     let diuS = '—', ditS = '—', est = 'Sin precio', cls = 'sin';
