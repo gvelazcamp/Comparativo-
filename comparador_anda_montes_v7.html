@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comparador ANDA vs MONTES</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif}
+:root{
+  --hdr:#1A56A0;--green:#2E7D32;--red:#C62828;--blue:#1565C0;
+  --orange:#E65100;--gray:#607D8B;--teal:#00695C;--white:#fff;
+  --text:#1A237E;--text2:#212121;--dim:#546E7A;
+  --bg:#F0F4F8;--panel:#fff;--card:#E8F0FE;
+  --row-even:#F5F9FF;--row-odd:#fff;--sel:#BBDEFB;
+}
+body{background:var(--bg);color:var(--text2);font-size:13px}
+/* HEADER */
+#hdr{background:var(--hdr);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+#hdr h1{font-size:16px;font-weight:700;letter-spacing:.3px}
+#saved{margin-left:auto;font-size:11px;color:#A5D6A7;font-weight:700}
+/* BADGES */
+#badges{background:var(--bg);padding:8px 14px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-bottom:1px solid #ddd}
+.badge{background:#fff;border:1px solid #ddd;border-radius:6px;padding:6px 12px;text-align:center;min-width:90px}
+.badge .num{font-size:18px;font-weight:700;display:block;line-height:1.2}
+.badge .lbl{font-size:10px;color:var(--dim)}
+/* EXPORT BUTTONS */
+#export-bar{background:var(--bg);padding:4px 14px 6px;display:flex;gap:8px}
+/* PANEL BAR */
+#panel-bar{background:#EEF3FB;padding:8px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid #C5CAE9}
+#panel-bar label{font-size:11px;font-weight:700;color:var(--text)}
+#cbPanel{width:340px;padding:5px 8px;border:1px solid #90CAF9;border-radius:4px;font-size:12px}
+#panel-info{font-size:11px;color:var(--blue);font-style:italic}
+/* TOOLBAR */
+#toolbar{background:#fff;padding:8px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid #ddd;position:sticky;top:52px;z-index:99;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+#toolbar label{font-size:11px;font-weight:700;color:var(--text2)}
+#searchExam{padding:5px 8px;border:1px solid #90CAF9;border-radius:4px;font-size:12px;width:200px}
+.radio-group{display:flex;gap:4px;flex-wrap:wrap}
+.radio-group label{font-size:11px;font-weight:700;cursor:pointer;padding:3px 7px;border-radius:12px;border:1px solid #ddd;user-select:none}
+.radio-group input{display:none}
+.radio-group input:checked+span{font-weight:700}
+#btnGuardar{background:var(--green);color:#fff;border:none;padding:6px 14px;border-radius:4px;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto}
+#btnGuardar:hover{opacity:.85}
+/* HINT BAR */
+#hint{background:#FFF9C4;padding:5px 14px;font-size:11px;font-weight:700;color:#5D4037;border-bottom:1px solid #F9E04B}
+/* TABLE */
+#tbl-wrap{overflow-x:auto;overflow-y:auto;flex:1}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--hdr);color:#fff;padding:8px 10px;text-align:left;cursor:pointer;white-space:nowrap;user-select:none;position:sticky;top:0;z-index:10}
+thead th.num{text-align:right}
+thead th:hover{background:#1565C0}
+tbody tr{border-bottom:1px solid #E8EEF5;cursor:default}
+tbody tr:hover{filter:brightness(.96)}
+tbody tr.selected{background:var(--sel)!important}
+td{padding:6px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px}
+td.num{text-align:right}
+td.est{text-align:center;font-weight:700}
+tr.sube td{color:var(--red);font-weight:700} tr.sube{background:#FFEBEE}
+tr.baja td{color:var(--green);font-weight:700} tr.baja{background:#E8F5E9}
+tr.igual td{color:var(--gray)}
+tr.sin td{color:var(--orange);font-style:italic}
+tr.asoc td{color:var(--blue);font-style:italic}
+tr.sincot{background:#FFEBEE} tr.sincot td{color:#B71C1C;font-style:italic}
+tr.oculto td{color:#9E9E9E;font-style:italic}
+tr.panel-row{background:var(--teal)!important} tr.panel-row td{color:#fff!important;font-weight:700}
+/* FOOTER TOTALES */
+#footer{background:var(--hdr);color:#fff;padding:8px 20px;display:flex;gap:30px;font-size:13px;font-weight:700;flex-shrink:0}
+/* CONTEXT MENU */
+#ctx-menu{position:fixed;background:#fff;border:1px solid #ccc;border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:9999;min-width:240px;display:none;font-size:12px}
+.ctx-item{padding:8px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0}
+.ctx-item:hover{background:#E3F2FD}
+.ctx-item:last-child{border-bottom:none}
+.ctx-sep{height:1px;background:#eee;margin:2px 0}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:8px;min-width:420px;max-width:800px;width:90%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.modal-hdr{padding:14px 18px;color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
+.modal-body{padding:16px 18px;overflow-y:auto;flex:1}
+.modal-footer{padding:10px 18px;display:flex;gap:8px;border-top:1px solid #eee;flex-shrink:0}
+.btn{padding:7px 16px;border:none;border-radius:4px;font-size:12px;font-weight:700;cursor:pointer;color:#fff}
+.btn:hover{opacity:.85}
+.btn-green{background:var(--green)}
+.btn-gray{background:var(--gray)}
+.btn-blue{background:var(--blue)}
+.btn-teal{background:var(--teal)}
+.btn-purple{background:#6A1B9A}
+input.price-input{width:140px;padding:8px 10px;border:2px solid #90CAF9;border-radius:4px;font-size:16px;font-weight:700;text-align:right;background:#E3F2FD;color:var(--text2)}
+input.qty-input{width:100px;padding:8px 10px;border:2px solid #90CAF9;border-radius:4px;font-size:16px;font-weight:700;text-align:right;background:#E3F2FD}
+input.search-input{width:100%;padding:7px 10px;border:1px solid #90CAF9;border-radius:4px;font-size:12px;margin-bottom:8px}
+.ref-text{color:var(--dim);font-size:12px;margin:4px 0 12px}
+.dest-box{background:#E8F5E9;padding:8px 12px;border-radius:4px;border-left:4px solid var(--green);margin-bottom:12px;font-size:12px;font-weight:700;color:var(--green)}
+/* ASOCIAR TABLE */
+#asoc-table-wrap{border:1px solid #ddd;border-radius:4px;overflow:auto;max-height:300px}
+#asoc-table{width:100%;border-collapse:collapse;font-size:12px}
+#asoc-table th{background:var(--hdr);color:#fff;padding:6px 10px;text-align:left;position:sticky;top:0}
+#asoc-table td{padding:6px 10px;border-bottom:1px solid #f0f0f0;cursor:pointer}
+#asoc-table tr:hover td{background:#E3F2FD}
+#asoc-table td.num{text-align:right}
+#asoc-table tr.has-price td{color:var(--teal)}
+/* PANEL LISTBOX */
+#panel-list{border:1px solid #ddd;border-radius:4px;overflow-y:auto;max-height:280px}
+.panel-item{padding:7px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f5f5f5}
+.panel-item:hover,.panel-item.selected{background:#E3F2FD;color:var(--text)}
+/* LAYOUT */
+html,body{height:100%}
+#app{display:flex;flex-direction:column;height:100vh}
+#main{display:flex;flex-direction:column;flex:1;overflow:hidden}
+#tbl-wrap{flex:1;overflow:auto}
+#showing{font-size:11px;color:var(--dim);margin-left:auto}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="hdr">
+  <span style="font-size:20px">⚖</span>
+  <h1>COMPARADOR DE PRECIOS — ANDA vs MONTES</h1>
+  <span id="saved"></span>
+</div>
+
+<div id="main">
+<!-- BADGES -->
+<div id="badges">
+  <div class="badge"><span class="num" id="b-total" style="color:#1A56A0">–</span><span class="lbl">Total Exámenes</span></div>
+  <div class="badge"><span class="num" id="b-anda" style="color:#1565C0">–</span><span class="lbl">Con precio ANDA</span></div>
+  <div class="badge"><span class="num" id="b-montes" style="color:#2E7D32">–</span><span class="lbl">Con precio MONTES</span></div>
+  <div class="badge"><span class="num" id="b-ambos" style="color:#00695C">–</span><span class="lbl">Con ambos precios</span></div>
+  <div class="badge"><span class="num" id="b-sube" style="color:#C62828">–</span><span class="lbl">MONTES ↑ Sube</span></div>
+  <div class="badge"><span class="num" id="b-baja" style="color:#2E7D32">–</span><span class="lbl">MONTES ↓ Baja</span></div>
+  <div class="badge"><span class="num" id="b-sinm" style="color:#E65100">–</span><span class="lbl">Sin precio MONTES</span></div>
+  <div class="badge"><span class="num" id="b-sinab" style="color:#C62828">–</span><span class="lbl">Sin ambos precios</span></div>
+  <div class="badge"><span class="num" id="b-ocultos" style="color:#607D8B">0</span><span class="lbl">Ocultos</span></div>
+</div>
+
+<!-- EXPORT -->
+<div id="export-bar">
+  <button class="btn btn-blue" onclick="exportarCSV()">💾 Descargar CSV actualizado</button>
+</div>
+
+<!-- PANEL BAR -->
+<div id="panel-bar">
+  <label>🗂 Buscar panel:</label>
+  <input list="panel-list-dl" id="cbPanel" placeholder="Escribí el nombre del panel..." oninput="onPanelInput()" onchange="onPanelChange()">
+  <datalist id="panel-list-dl"></datalist>
+  <button class="btn btn-gray" style="padding:4px 10px;font-size:11px" onclick="limpiarPanel()">✖ Limpiar</button>
+  <label style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#1565C0;cursor:pointer">
+    <input type="checkbox" id="chkAsoc" onchange="render()"> 📋 Solo asociados a panel
+  </label>
+  <span id="panel-info"></span>
+</div>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <label>🔍 Buscar examen:</label>
+  <input id="searchExam" placeholder="Buscar..." oninput="render()">
+  <label>Filtrar:</label>
+  <div class="radio-group" id="filtros"></div>
+  <label style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;cursor:pointer">
+    <input type="checkbox" id="chkOcultos" onchange="render()"> 👁 Mostrar ocultos
+  </label>
+  <span id="showing"></span>
+  <button id="btnGuardar" onclick="guardarManual()">💾 Guardar</button>
+</div>
+
+<div id="hint">💡 CLICK DERECHO sobre un examen: editar precio | cambiar cantidad | asociar | ocultar</div>
+
+<!-- TABLE -->
+<div id="tbl-wrap">
+<table id="tabla">
+<thead>
+  <tr>
+    <th style="width:340px" onclick="sortBy(0)">Examen ⇅</th>
+    <th class="num" style="width:90px" onclick="sortBy(1)">Cantidad ⇅</th>
+    <th class="num" style="width:120px" onclick="sortBy(2)">Precio ANDA ⇅</th>
+    <th class="num" style="width:130px" onclick="sortBy(3)">Precio MONTES ⇅</th>
+    <th class="num" style="width:120px" onclick="sortBy(4)">Dif. Unitaria ⇅</th>
+    <th class="num" style="width:120px" onclick="sortBy(5)">Dif. Total ⇅</th>
+    <th style="width:120px;text-align:center" onclick="sortBy(6)">Estado ⇅</th>
+  </tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+
+<!-- FOOTER -->
+<div id="footer">
+  <span>TOTALES:</span>
+  <span id="f-anda">Total ANDA: –</span>
+  <span id="f-montes">Total MONTES: –</span>
+  <span id="f-dif">Diferencia: –</span>
+</div>
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu"></div>
+
+<!-- MODAL PRECIO -->
+<div class="modal-overlay" id="modal-precio">
+  <div class="modal">
+    <div class="modal-hdr" id="mprecio-hdr"></div>
+    <div class="modal-body">
+      <div style="font-size:13px;font-weight:700;color:#1A237E;margin-bottom:4px" id="mprecio-exam"></div>
+      <div class="ref-text" id="mprecio-ref"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+        <label style="font-weight:700;font-size:13px" id="mprecio-lbl"></label>
+        <input class="price-input" id="mprecio-input" type="text" onkeydown="if(event.key==='Enter')savePrecio()">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-green" onclick="savePrecio()">✔ Guardar</button>
+      <button class="btn btn-gray" onclick="closeModal('modal-precio')">✖ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CANTIDAD -->
+<div class="modal-overlay" id="modal-cantidad">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-hdr" style="background:#1A56A0">🔢 Cambiar cantidad</div>
+    <div class="modal-body">
+      <div style="font-size:13px;font-weight:700;color:#1A237E;margin-bottom:12px" id="mcant-exam"></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <label style="font-weight:700;font-size:13px">Cantidad:</label>
+        <input class="qty-input" id="mcant-input" type="number" min="0" onkeydown="if(event.key==='Enter')saveCantidad()">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-green" onclick="saveCantidad()">✔ Guardar</button>
+      <button class="btn btn-gray" onclick="closeModal('modal-cantidad')">✖ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ASOCIAR PRECIOS -->
+<div class="modal-overlay" id="modal-asoc-precios">
+  <div class="modal">
+    <div class="modal-hdr" style="background:#00695C">🔗 Asociar precios de otro examen</div>
+    <div class="modal-body">
+      <div class="dest-box" id="masoc-dest"></div>
+      <div style="font-size:11px;font-style:italic;color:#546E7A;margin-bottom:8px">Buscá el examen equivalente → doble click o Asociar:</div>
+      <input class="search-input" id="masoc-search" placeholder="Buscar examen..." oninput="filtrarAsocTable()">
+      <div id="asoc-table-wrap">
+        <table id="asoc-table">
+          <thead><tr><th>Examen</th><th class="num">Precio ANDA</th><th class="num">Precio MONTES</th></tr></thead>
+          <tbody id="asoc-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-teal" onclick="confirmarAsocPrecios()">🔗 Asociar precios</button>
+      <button class="btn btn-gray" onclick="closeModal('modal-asoc-precios')">✖ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ASOCIAR PANEL -->
+<div class="modal-overlay" id="modal-asoc-panel">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr" style="background:#00695C">📋 Asociar a panel</div>
+    <div class="modal-body">
+      <div class="dest-box" id="mpanel-dest"></div>
+      <input class="search-input" id="mpanel-search" placeholder="Buscar panel..." oninput="filtrarPanelList()">
+      <div id="panel-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-teal" onclick="confirmarAsocPanel()">📋 Asociar</button>
+      <button class="btn btn-gray" onclick="closeModal('modal-asoc-panel')">✖ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const RAW_DATA = [{"Examen": ".... PANICOLAOU", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "17 OH PROGESTERONA", "Cantidad_2025": 5, "Precio_ANDA": 1756.56, "Precio_MONTES": 1756.56, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "17 OH PROGESTERONA CON ACTH", "Cantidad_2025": 0, "Precio_ANDA": 1756.56, "Precio_MONTES": 1756.56, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "21 - HIDROXILASA, AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "5 HIDROXIINDOLACETICO, ACIDO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ABL-BCR, ESTUDIO MOLECULAR CUALITATIVO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ABL-BCR, ESTUDIO MOLECULAR CUANTIFICACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ACETILCOLINA  ANTI RECEPTOR, AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ACIDO FOLICO", "Cantidad_2025": 15, "Precio_ANDA": 1522.36, "Precio_MONTES": 1210.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ACIDO FOLICO URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 1522.36, "Precio_MONTES": 1210.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ACIDO URICO EN ORINA  AISLADA", "Cantidad_2025": 1, "Precio_ANDA": 96.03, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ACIDO URICO EN ORINA DE 24H", "Cantidad_2025": 3, "Precio_ANDA": 96.03, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ACIDO URICO EN SANGRE", "Cantidad_2025": 103, "Precio_ANDA": 93.68, "Precio_MONTES": 93.68, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ACIDOS GRASOS ESENCIALES, PERFIL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ACILCARNITINAS, ESTUDIO CUANTITATIVO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ACTH BASAL", "Cantidad_2025": 0, "Precio_ANDA": 2148.86, "Precio_MONTES": 2148.86, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ACTIVIDAD ANTIFACTOR XA (ACTIVADO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ACUAPORINA 4, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ADENOVIRUS EN MATERIA FECAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ADHESIVIDAD PLAQUETARIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AELO", "Cantidad_2025": 0, "Precio_ANDA": 430.94, "Precio_MONTES": 430.94, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AGREGABILIDAD PLAQUETARIA CON ADP Y EPINEFRINA", "Cantidad_2025": 0, "Precio_ANDA": 2159.4, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AGREGABILIDAD PLAQUETARIA CON ADP, EPINEFRINA Y RISTOCETINA", "Cantidad_2025": 1, "Precio_ANDA": 2159.4, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AGREGABILIDAD PLAQUETARIA CON RISTOCETINA", "Cantidad_2025": 0, "Precio_ANDA": 2159.4, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALBUMINA EN SANGRE", "Cantidad_2025": 512, "Precio_ANDA": 284.56, "Precio_MONTES": 284.56, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALBUMINURIA EN ORINA DE 24H", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALCOHOL ETILICO EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALCOHOL ETILICO EN SANGRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALDOLASA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALDOSTERONA EN SANGRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALERGENO ALFA-LACTOALBUMINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALERGENO CASEINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALERGENO CONTACTANTE (LATEX)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALERGENO OVOALBUMINA IGE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALERGENO, OVOALBUMINA IGE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALERGENOS ALFA Y BETA LACTOALBUMINA / CASEINA / OTROS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALERGENOS ALIMENTARIOS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": 4180.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALERGENOS INHALATORIOS", "Cantidad_2025": 0, "Precio_ANDA": 8776.96, "Precio_MONTES": 4180.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALERGENOS INSECTOS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": 4180.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALERGENOS INSECTOS / LATEX / OTROS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": 4180.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALFA-1-ANTITRIPSINA EN MATERIA FECAL", "Cantidad_2025": 0, "Precio_ANDA": 2433.43, "Precio_MONTES": 3080.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALFA-1-ANTITRIPSINA EN SANGRE", "Cantidad_2025": 0, "Precio_ANDA": 1253.02, "Precio_MONTES": 3080.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALFA-GALACTOSIDASA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALFAFETOPROTEINA", "Cantidad_2025": 3, "Precio_ANDA": 1757.73, "Precio_MONTES": 1757.73, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALFAFETOPROTEINA URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 1757.73, "Precio_MONTES": 1757.73, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALUMINIO EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ALUMINIO EN SANGRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AMH EN SANGRE (ANTIMULLERIANA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AMILASA EN ORINA AISLADA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AMILASA EN SANGRE", "Cantidad_2025": 5, "Precio_ANDA": 94.85, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AMINOACIDOS EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AMINOACIDOS EN SANGRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AMONIEMIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AMOXICILINA, IGE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AMPICILINA. IGE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "AMPLITUD TERMICA, ANTIERITROCITARIOS, AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANATOMIA PATOLOGICA X1", "Cantidad_2025": 1, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANATOMIA PATOLOGICA X2", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANCA-MPO (AC. ANTI MIELOPEROXIDASA)", "Cantidad_2025": 1, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANCA-PR3 (AC. ANTI PROTEINASA 3)", "Cantidad_2025": 1, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANDROSTENEDIOL GLUCURONIDO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANDROSTENEDIONA", "Cantidad_2025": 1, "Precio_ANDA": 2139.49, "Precio_MONTES": 2139.49, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANFETAMINAS EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANTIBIOGRAMA N\u00b01", "Cantidad_2025": 97, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANTIBIOGRAMA N\u00b02", "Cantidad_2025": 3, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANTICOAGULANTE LUPICO", "Cantidad_2025": 3, "Precio_ANDA": 2374.87, "Precio_MONTES": 3421.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANTICUERPOS IRREGULARES, INVESTIGACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANTIDIURETICA HORMONA  (ADH)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ANTITROMBINA III", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "APOLIPOPROTEINA A1", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "APOLIPOPROTEINA B", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "APOLIPOPROTEINAS (APOA1 + APOB)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ASESORAMIENTO MEDICO NG CPU", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ASPERGILLUS FUMIGATUS IGG, AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ASPERGILLUS FUMIGATUS, IGE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ASPERGILLUS, AG. GALACTOMANANO EN SANGRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ATAXIAS ESPINOCEREBELOSA, EXPANSION DE TRIPLETA PANEL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ATAXIAS HEREDITARIAS, PANEL DE GENES", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BACILOSCOPIA SERIADA - MUESTRA 1 DE 2", "Cantidad_2025": 1, "Precio_ANDA": 94.85, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BACILOSCOPIA SERIADA - MUESTRA 2 DE 2", "Cantidad_2025": 1, "Precio_ANDA": 94.85, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BARTONELLA HENSELAE (ARA\u00d1AZO DE GATO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BENZODIACEPINAS EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": 970.79, "Precio_MONTES": 970.79, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BETA 2 GLICOPROTEINA I IGG, ANTI AC.", "Cantidad_2025": 2, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BETA 2 GLICOPROTEINA I IGG, ANTI AC. URGENTE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BETA 2 GLICOPROTEINA I IGM, ANTI AC.", "Cantidad_2025": 2, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BETA 2 GLICOPROTEINA I IGM, ANTI AC. URGENTE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BETA 2 MICROGLOBULINA  EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BETA 2 MICROGLOBULINA SUERO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BETA-CROSSLAPS (CTX)", "Cantidad_2025": 4, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BETACAROTENO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BILIARES ACIDOS TOTALES", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BILIRRUBINAS EN SANGRE (TOTAL,DIRECTA E INDIRECTA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "HEPATICO, FUNCIONAL", "Sin_Cotizar": false}, {"Examen": "BIOPSIA DE MEDULA OSEA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BORDETELLA PERTUSSIS, IGG", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BORRELIA  / LYME  (ENFERMEDAD)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BRCA1 Y BRCA2 (NGS Y MLPA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "BRUCELOSIS (ROSA DE BENGALA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CA 125 (OVARIO)", "Cantidad_2025": 4, "Precio_ANDA": 2214.44, "Precio_MONTES": 2214.44, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CA 125 (OVARIO) URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 2214.44, "Precio_MONTES": 2214.44, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CA 15/3 (MAMA)", "Cantidad_2025": 2, "Precio_ANDA": 2214.44, "Precio_MONTES": 2214.44, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CA 15/3 (MAMA) URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 2214.44, "Precio_MONTES": 2214.44, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CA 19/9 (COLON)", "Cantidad_2025": 7, "Precio_ANDA": 2214.44, "Precio_MONTES": 2214.44, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CA 19/9 URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 2214.44, "Precio_MONTES": 2214.44, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CA 21-1 (CYFRA 21-1)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CADENAS LIVIANAS  EN ORINA  ANTI-KAPPA Y LAMBDA (NEFELOMET)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CADENAS LIVIANAS LIBRES EN SUERO ANTI-KAPPA Y LAMBDA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CALCIO  IONICO", "Cantidad_2025": 9, "Precio_ANDA": 365.37, "Precio_MONTES": 365.37, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CALCIO TOTAL EN ORINA  AISLADA", "Cantidad_2025": 0, "Precio_ANDA": 94.85, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CALCIO TOTAL EN ORINA DE 24H", "Cantidad_2025": 9, "Precio_ANDA": 93.68, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CALCIO TOTAL EN SANGRE", "Cantidad_2025": 51, "Precio_ANDA": 94.85, "Precio_MONTES": 150.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CALCITONINA BASAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CALCULO RENAL, ESTUDIO FISICOQUIMICO", "Cantidad_2025": 1, "Precio_ANDA": 437.97, "Precio_MONTES": 1193.5, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CALPROTECTINA FECAL", "Cantidad_2025": 6, "Precio_ANDA": 3807.06, "Precio_MONTES": 2307.8, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CALR ESTUDIO MOLECULAR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CANDIDA ALBICANS, SCREENING", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CARBAMAZEPINA - 1 MEDICION", "Cantidad_2025": 0, "Precio_ANDA": 2298.76, "Precio_MONTES": 1591.7, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CARDIOLIPINA IGA, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CARDIOLIPINA IGG, ANTI AC.", "Cantidad_2025": 2, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CARDIOLIPINA IGG, ANTI AC. URGENTE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CARDIOLIPINA IGM, ANTI AC.", "Cantidad_2025": 2, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CARDIOLIPINA IGM, ANTI AC. URGENTE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CARIOTIPO EN SANGRE PERIFERICA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CARNITINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CATECOLAMINAS EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CATECOLAMINAS EN SANGRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CEA (ANTIGENO CARCINOEMBRIONARIO)", "Cantidad_2025": 9, "Precio_ANDA": 2216.78, "Precio_MONTES": 2216.78, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CEA (ANTIGENO CARCINOEMBRIONARIO) URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 2216.78, "Precio_MONTES": 2216.78, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CELULAS PARIETALES GASTRICAS, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": 1092.58, "Precio_MONTES": 1092.58, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CENTROMERO, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CERULOPLASMINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CHAGAS (IGG)", "Cantidad_2025": 3, "Precio_ANDA": 1666.39, "Precio_MONTES": 1666.39, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CHLAMYDIA PNEUMONIAE IGG, SEROLOGIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CHLAMYDIA PNEUMONIAE IGM, SEROLOGIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CHLAMYDIA PSITACI IGG, SEROLOGIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CHLAMYDIA PSITACI IGM, SEROLOGIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CHLAMYDIA TRACHOMATIS IGG, SEROLOGIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CHLAMYDIA TRACHOMATIS IGM, SEROLOGIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CHLAMYDIA TRACHOMATIS POR BIOLOGIA MOLECULAR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "TGI (TRACTO GENITAL INFERIOR), PANEL", "Sin_Cotizar": false}, {"Examen": "CICLOSPORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CISTATINA C", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CISTINURIA (CUANTITATIVA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITOGENETICO DE MEDULA OSEA O SANGRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITOGENETICO FRAGILIDAD CROMOSOMICA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITOGENETICO HEMATOLOGICO / CARIOTIPO HEMATOLOGICO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITOLOGICO DE...", "Cantidad_2025": 0, "Precio_ANDA": 4215.75, "Precio_MONTES": 3190.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITOMEGALOVIRUS CUALITATIVO POR PCR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITOMEGALOVIRUS IGG", "Cantidad_2025": 1, "Precio_ANDA": 1399.4, "Precio_MONTES": 1089.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITOMEGALOVIRUS IGG URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 1399.4, "Precio_MONTES": 1089.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITOMEGALOVIRUS IGM", "Cantidad_2025": 2, "Precio_ANDA": 1399.4, "Precio_MONTES": 1089.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITOMEGALOVIRUS IGM URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 1399.4, "Precio_MONTES": 1089.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITOMEGALOVIRUS, CARGA VIRAL (PCR)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITOPLASMA DEL NEUTROFILO (ANCA), ANTI AC.", "Cantidad_2025": 4, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITRATURIA", "Cantidad_2025": 1, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITRATURIA EN ORINA", "Cantidad_2025": 2, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITRATURIA EN ORINA  AISLADA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITRULINA PEPTIDO CICLICO, ANTI AC.", "Cantidad_2025": 7, "Precio_ANDA": 6213.55, "Precio_MONTES": 1272.7, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITRULINA PEPTIDO CICLICO, ANTI AC. URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 6213.55, "Precio_MONTES": 1272.7, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CLORO EN ORINA  AISLADA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CLORO EN ORINA DE 24H", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CLORO EN SANGRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "IONOGRAMA  EN SANGRE (NA,K,CL)", "Sin_Cotizar": false}, {"Examen": "CLOSTRIDIOIDES DIFFICILE, BUSQUEDA", "Cantidad_2025": 1, "Precio_ANDA": 970.79, "Precio_MONTES": 47774.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CLOZAPINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COBRE EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COBRE EN SANGRE", "Cantidad_2025": 0, "Precio_ANDA": 131.16, "Precio_MONTES": 2378.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COCAINA (BENZOILECGONINA),  SCREENING", "Cantidad_2025": 2, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COCLEARES (PROTEINA 68 KD/HPS70), AC", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COFACTOR RISTOCETINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COLESTEROL HDL", "Cantidad_2025": 648, "Precio_ANDA": 133.5, "Precio_MONTES": 133.5, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COLESTEROL HDL A 2 HORAS", "Cantidad_2025": 0, "Precio_ANDA": 133.5, "Precio_MONTES": 133.5, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COLESTEROL LDL", "Cantidad_2025": 648, "Precio_ANDA": 133.5, "Precio_MONTES": 133.5, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COLESTEROL TOTAL", "Cantidad_2025": 2391, "Precio_ANDA": 126.47, "Precio_MONTES": 126.47, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COLESTEROL VLDL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "PERFIL LIPIDICO", "Sin_Cotizar": false}, {"Examen": "COLINESTERASA", "Cantidad_2025": 107, "Precio_ANDA": 183.85, "Precio_MONTES": 183.85, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COLPOSCOPIA", "Cantidad_2025": 16, "Precio_ANDA": 1275.27, "Precio_MONTES": 1275.27, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COMODIN PARA DERIVACIONES", "Cantidad_2025": 9, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COMPLEJOS INMUNES CIRCULANTES", "Cantidad_2025": 0, "Precio_ANDA": 615.97, "Precio_MONTES": 7810.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COMPLEMENTO C1 INHIBIDOR ESTERASA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COMPLEMENTO C1Q", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COMPLEMENTO C3", "Cantidad_2025": 5, "Precio_ANDA": 757.66, "Precio_MONTES": 757.66, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COMPLEMENTO C4", "Cantidad_2025": 5, "Precio_ANDA": 757.66, "Precio_MONTES": 757.66, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COMPLEMENTO CH50", "Cantidad_2025": 0, "Precio_ANDA": 757.66, "Precio_MONTES": 2915.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COOMBS DIRECTO", "Cantidad_2025": 1, "Precio_ANDA": 696.77, "Precio_MONTES": 696.77, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COPROBACTERIOLOGICO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COPROCULTIVO", "Cantidad_2025": 4, "Precio_ANDA": 478.96, "Precio_MONTES": 478.96, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COPROFUNCIONAL", "Cantidad_2025": 3, "Precio_ANDA": 614.8, "Precio_MONTES": 614.8, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COPROPARASITARIO", "Cantidad_2025": 87, "Precio_ANDA": 325.66, "Precio_MONTES": 325.66, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COPROVIROLOGICO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CORTISOL / CORTISONA, LIBRE EN ORINA DE 24H (LC-MS/MS)", "Cantidad_2025": 0, "Precio_ANDA": 2364.33, "Precio_MONTES": 2364.33, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CORTISOL BASAL", "Cantidad_2025": 2, "Precio_ANDA": 1817.46, "Precio_MONTES": 1817.46, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CORTISOL CON ESTIMULO DE ACTH (INTRAVENOSA)", "Cantidad_2025": 0, "Precio_ANDA": 2148.86, "Precio_MONTES": 2148.86, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CORTISOL CON RITMO CIRCADIANO", "Cantidad_2025": 0, "Precio_ANDA": 3314.05, "Precio_MONTES": 3314.05, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CORTISOL EN SALIVA  (LC-MS/MS)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CORTISOL POS SUPRESION POR DEXAMETASONA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CPK MB (CREATINA QUINASA ISO CARDIACA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CPK TOTAL", "Cantidad_2025": 3, "Precio_ANDA": 612.46, "Precio_MONTES": 612.46, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CREATININA EN ORINA AISLADA", "Cantidad_2025": 0, "Precio_ANDA": 165.12, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CREATININA EN ORINA DE 24H", "Cantidad_2025": 5, "Precio_ANDA": 110.08, "Precio_MONTES": 158.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CREATININA EN SANGRE", "Cantidad_2025": 713, "Precio_ANDA": 141.7, "Precio_MONTES": 141.7, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CRIOAGLUTININAS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CRIOGLOBULINAS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CRIPTOCOCOS, ANTIGENO TITULACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CROMO EN SUERO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CROMOGRANINA A", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CROMOSOMA PHILADELPHIA, CITOGENETICO DETECCION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CROMOSOMA Y MICRODELECIONES", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CUERPOS CETONICOS EN SANGRE", "Cantidad_2025": 0, "Precio_ANDA": 18.74, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CUERPOS REDUCTORES HECES", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CULTIVO BACTERIOLOGICO X1", "Cantidad_2025": 0, "Precio_ANDA": 322.55, "Precio_MONTES": 1210.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CULTIVO BACTERIOLOGICO X2", "Cantidad_2025": 0, "Precio_ANDA": 322.55, "Precio_MONTES": 1210.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "D-DIMERO", "Cantidad_2025": 1, "Precio_ANDA": 3412.42, "Precio_MONTES": 1909.6, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DENGUE / ZIKA / CHIKUNGUNYA, DIAGNOSTICO CONFIRMATORIO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DENGUE, TEST RAPIDO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DERIVACION, CULTIVO", "Cantidad_2025": 1, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DERMATOMIOSITIS PANEL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DFS-70, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DHEA (LC-MS/MS)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DHEA-SO4", "Cantidad_2025": 0, "Precio_ANDA": 3774.27, "Precio_MONTES": 1432.2, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DHEA-SO4 URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 3774.27, "Precio_MONTES": 1432.2, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DIABETES MELLITUS TIPO I, EVALUACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DIGOXINEMIA", "Cantidad_2025": 0, "Precio_ANDA": 1181.58, "Precio_MONTES": 1181.58, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DIHIDROTESTOSTERONA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DNADS, ANTI AC.", "Cantidad_2025": 6, "Precio_ANDA": 1954.47, "Precio_MONTES": 990.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DNASA B, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DPD (DEOXIPIRIDINOLINA)", "Cantidad_2025": 1, "Precio_ANDA": 2331.55, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "DUCHENNE SECUENCIA GENICA NGS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ELASTASA PANCREATICA 1 EN HECES", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ELECTROCARDIOGRAMA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ELECTROFORESIS DE HEMOGLOBINA", "Cantidad_2025": 1, "Precio_ANDA": 2251.91, "Precio_MONTES": 2251.91, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ENCEFALOPATIA AUTOINMUNE PEDIATRICA, PANEL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ENCEFALOPATIA, EVALUACION AUTOINMUNE PARA NEOPLASICA EN LCR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ENDOMISIO IGA, ANTI  AC.", "Cantidad_2025": 47, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ENDOMISIO IGG, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ENTEROVIRUS POR PCR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ENZIMA CONVERSORA DE ANGIOTENSINA I (ECA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EOSINOFILOS EN EXUDADO NASAL O SALIVA", "Cantidad_2025": 0, "Precio_ANDA": 456.71, "Precio_MONTES": 456.71, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EPSTEIN BARR (EBV) POR PCR CUALITATIVO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EPSTEIN BARR ANTI-AG NUCLEAR (EBNA), AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EPSTEIN BARR IGG", "Cantidad_2025": 0, "Precio_ANDA": 2932.29, "Precio_MONTES": 1909.6, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EPSTEIN BARR IGG URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 2932.29, "Precio_MONTES": 1909.6, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EPSTEIN BARR IGM", "Cantidad_2025": 0, "Precio_ANDA": 2932.29, "Precio_MONTES": 1909.6, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EPSTEIN BARR IGM URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 2932.29, "Precio_MONTES": 1909.6, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ERITROPOYETINA (EPO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ESPATULA ADHESIVA", "Cantidad_2025": 41, "Precio_ANDA": 131.16, "Precio_MONTES": 317.9, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ESPERMOCULTIVO", "Cantidad_2025": 1, "Precio_ANDA": 267.0, "Precio_MONTES": 954.8, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ESTEATOCRITO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ESTRADIOL", "Cantidad_2025": 18, "Precio_ANDA": 1275.27, "Precio_MONTES": 954.8, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ESTRADIOL EN EL DIA", "Cantidad_2025": 0, "Precio_ANDA": 1275.27, "Precio_MONTES": 954.8, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ESTRIOL LIBRE (NO CONJUGADO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ESTRONA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXPECTORACION, BACTERIOLOGICO", "Cantidad_2025": 1, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXTRACCION Y SEPARACION DE MUESTRA (LOCAL)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXTRACCION Y SEPARACION DE MUESTRAS DOMICILIO MONTEVIDEO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXTRACCIONES 1 HORA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXTRACCIONES 2 HORAS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXUDADO CERVICOVAGINAL (DIRECTO,FRESCO Y CULTIVO)", "Cantidad_2025": 36, "Precio_ANDA": 563.27, "Precio_MONTES": 563.27, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXUDADO CONJUNTIVAL X1", "Cantidad_2025": 0, "Precio_ANDA": 263.48, "Precio_MONTES": 716.1, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXUDADO CONJUNTIVAL X2", "Cantidad_2025": 0, "Precio_ANDA": 263.48, "Precio_MONTES": 716.1, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXUDADO DE HERIDA", "Cantidad_2025": 5, "Precio_ANDA": 267.0, "Precio_MONTES": 267.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXUDADO DE:", "Cantidad_2025": 11, "Precio_ANDA": 266.9976899639614, "Precio_MONTES": 267.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXUDADO FARINGEO", "Cantidad_2025": 4, "Precio_ANDA": 296.27, "Precio_MONTES": 296.27, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXUDADO LACRIMAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXUDADO NASAL", "Cantidad_2025": 20, "Precio_ANDA": 296.27, "Precio_MONTES": 292.27, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXUDADO OTICO X1", "Cantidad_2025": 3, "Precio_ANDA": 266.9976899639614, "Precio_MONTES": 267.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXUDADO OTICO X2", "Cantidad_2025": 3, "Precio_ANDA": 266.9976899639614, "Precio_MONTES": 267.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXUDADO URETRAL (DIRECTO,FRESCO Y CULTIVO)", "Cantidad_2025": 3, "Precio_ANDA": 2339.74, "Precio_MONTES": 2339.74, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "EXUDADO VULVAR", "Cantidad_2025": 2, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR DE CRECIMIENTO TRANSFORMANTE BETA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR II 20210", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR II DE LA COAGULACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR INTRINSECO, AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR IX DE LA COAGULACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR REUMATOIDEO", "Cantidad_2025": 30, "Precio_ANDA": 404.01, "Precio_MONTES": 404.01, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR RH", "Cantidad_2025": 5, "Precio_ANDA": 230.7, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR V DE LA COAGULACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR V LEIDEN", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR VII DE LA COAGULACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR VIII DE LA COAGULACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR X DE LA COAGULACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR XI DE LA COAGULACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FACTOR XII DE LA COAGULACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FECATEST", "Cantidad_2025": 86, "Precio_ANDA": 850.18, "Precio_MONTES": 850.18, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FECATEST SUMMUM CARE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FENITOINA EN VALLE", "Cantidad_2025": 0, "Precio_ANDA": 1425.16, "Precio_MONTES": 1425.16, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FERRITINA", "Cantidad_2025": 99, "Precio_ANDA": 1257.7, "Precio_MONTES": 1193.5, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FIBRINOGENO", "Cantidad_2025": 124, "Precio_ANDA": 199.08, "Precio_MONTES": 199.08, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FIBROSIS QUISTICA, SECUENCIACION DEL GEN", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FOSFATASA ACIDA PROSTATICA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FOSFATASA ACIDA TOTAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FOSFATASA ALCALINA", "Cantidad_2025": 568, "Precio_ANDA": 163.95, "Precio_MONTES": 163.95, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FOSFATASA ALCALINA OSEA", "Cantidad_2025": 0, "Precio_ANDA": 163.95, "Precio_MONTES": 163.95, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FOSFATOS EN ORINA AISLADA", "Cantidad_2025": 0, "Precio_ANDA": 94.85, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FOSFATOS EN ORINA DE 24H", "Cantidad_2025": 9, "Precio_ANDA": 948.85, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FOSFATOS EN SANGRE", "Cantidad_2025": 16, "Precio_ANDA": 94.85, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FOSFOLIPASA  A2,  AC. ANTI RECEPTOR (PLA2R)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FRAGILIDAD CORPUSCULAR OSMOTICA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FRUCTOSAMINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FSH", "Cantidad_2025": 33, "Precio_ANDA": 1363.09, "Precio_MONTES": 858.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FSH EN EL DIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FTA ABS TOTAL", "Cantidad_2025": 9, "Precio_ANDA": 1113.66, "Precio_MONTES": 1133.66, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "G6PDH (GLUCOSA-6-FOSFATO-DESHIDROGENASA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GALACTOSA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GAMMAGLUTAMILTRANSPEPTIDASA", "Cantidad_2025": 107, "Precio_ANDA": 429.77, "Precio_MONTES": 429.77, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GANGLIOSIDOS, AC. (ASIALO-GM1, GM1, GM2, GD1A, GD1B, GQ1B)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GASOMETRIA VENOSA", "Cantidad_2025": 2, "Precio_ANDA": 2616.11, "Precio_MONTES": 2616.11, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GASTRINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GASTROINTESTINAL PANEL  (FILMARRAY\u00ae GI PANEL)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GEN PML - RAR-ALFA, INVESTIGACION POR BIOLOGIA MOLECULAR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GENES PARA CANCER HEREDITARIO, PANEL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GENESIA - EXTRACCION Y PREPARACION DE MUESTRA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GLIADINA IGA, ANTI AC.", "Cantidad_2025": 41, "Precio_ANDA": 2277.68, "Precio_MONTES": 2277.68, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GLIADINA IGG, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": 2277.68, "Precio_MONTES": 2277.68, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GLOBULOS ROJOS DISMORFICOS EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GLUCOSA  (PRUEBA DE TOLERANCIA ORAL EN EL EMBARAZO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GLUCOSA A  2 HORAS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GLUCOSA BASAL Y POS CARGA", "Cantidad_2025": 16, "Precio_ANDA": 455.54, "Precio_MONTES": 455.54, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GLUCOSA CURVA (B,30,60,90,120)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GLUCOSA EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": 66.75, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GLUCOSA EN SANGRE", "Cantidad_2025": 1966, "Precio_ANDA": 94.85, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GLUTATION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GRASAS EN HECES", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GRUPO SANGUINEO (A,B,0)", "Cantidad_2025": 5, "Precio_ANDA": 230.7, "Precio_MONTES": 635.8, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GRUPO SANGUINEO (IMAGEN)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HAPTOGLOBINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HCG TOTAL CUANTITATIVA", "Cantidad_2025": 50, "Precio_ANDA": 1094.44, "Precio_MONTES": 874.5, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HCG-BETA LIBRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HE4 (PROTEINA EPIDIDIMAL HUMANA 4)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HELICOBACTER PYLORI EN MATERIA FECAL", "Cantidad_2025": 7, "Precio_ANDA": 4579.95, "Precio_MONTES": 2387.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HELICOBACTER PYLORI EN SANGRE", "Cantidad_2025": 4, "Precio_ANDA": 1315.08, "Precio_MONTES": 1315.08, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEMOCROMATOSIS HEREDITARIA, VARIANTES C282Y Y H63D", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEMOCULTIVO MUESTRA 1 DE 1", "Cantidad_2025": 0, "Precio_ANDA": 711.99, "Precio_MONTES": 2145.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEMOCULTIVO SERIADO - MUESTRA 1 DE 2", "Cantidad_2025": 0, "Precio_ANDA": 711.99, "Precio_MONTES": 2145.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEMOCULTIVO SERIADO - MUESTRA 2 DE 2", "Cantidad_2025": 0, "Precio_ANDA": 711.99, "Precio_MONTES": 2145.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEMOGLOBINA EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEMOGLOBINA GLICOSILADA", "Cantidad_2025": 226, "Precio_ANDA": 1058.62, "Precio_MONTES": 1058.62, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEMOGLOBINURIA PAROXISTICA NOCTURA (CITOMETRIA FLUJO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEMOGRAMA", "Cantidad_2025": 25, "Precio_ANDA": 230.7, "Precio_MONTES": 397.1, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEMOGRAMA COMPLETO", "Cantidad_2025": 873, "Precio_ANDA": 230.7, "Precio_MONTES": 397.1, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS A IGM, AC URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 1497.0, "Precio_MONTES": 1497.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS A IGM, AC.", "Cantidad_2025": 4, "Precio_ANDA": 1497.0, "Precio_MONTES": 1497.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS B (HBV) CUALITATIVO PCR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS B ANTI HBS IGG, AC.", "Cantidad_2025": 23, "Precio_ANDA": 576.15, "Precio_MONTES": 576.15, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS B ANTI HBS IGG, AC. URGENTE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS B ANTIG.AUSTRALIA (AG HBS)", "Cantidad_2025": 47, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS B ANTIG.AUSTRALIA (AG HBS) URGENTE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS B ANTIGENO E", "Cantidad_2025": 0, "Precio_ANDA": 1879.52, "Precio_MONTES": 1879.52, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS B ANTIGENO E Y ANTICUERPO", "Cantidad_2025": 0, "Precio_ANDA": 1879.52, "Precio_MONTES": 1879.52, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS B HBC TOTAL, AC.", "Cantidad_2025": 17, "Precio_ANDA": 2373.7, "Precio_MONTES": 1670.9, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS B HBC TOTAL, AC. URGENTE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS B, CARGA VIRAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS C (PCR) CUALITATIVO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS C GENOTIPADO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS C IGG, AC URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 1915.83, "Precio_MONTES": 1915.83, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS C IGG, AC.", "Cantidad_2025": 33, "Precio_ANDA": 1915.83, "Precio_MONTES": 1915.83, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS C, CARGA VIRAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS D", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS E IGG AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS E IGM AC. SCREENING Y CONFIRMATORIO (SI POSITIVO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATITIS E PCR EN MATERIAL FECAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATOPATIAS AUTOINMUNES IGG AC., PANEL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HERPES SIMPLEX (1 Y 2) VIRUS, ESTUDIO MOLECULAR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HERPES SIMPLEX TIPO 6 (HSH) POR PCR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HERPES VIRUS 9, FAMILIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HERPES VIRUS I+II (IGG)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HERPES VIRUS I+II (IGM)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HGH BASAL (CRECIMIENTO HORMONA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HGH CON ESTIMULO DE CLONIDINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HGH CON ESTIMULO DE L-DOPA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HGH POST ESTIMULO C/GLUCOSA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HIDATIDOSIS (ELISA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HISTAMINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HISTONAS, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HIV", "Cantidad_2025": 123, "Precio_ANDA": 649.93, "Precio_MONTES": 649.93, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HIV CARGA VIRAL", "Cantidad_2025": 0, "Precio_ANDA": 649.93, "Precio_MONTES": 649.93, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HIV CONFIRMATORIO", "Cantidad_2025": 2, "Precio_ANDA": 649.93, "Precio_MONTES": 649.93, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HIV CUALITATIVO POR PCR", "Cantidad_2025": 0, "Precio_ANDA": 649.93, "Precio_MONTES": 649.93, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HIV RAPIDO", "Cantidad_2025": 0, "Precio_ANDA": 649.93, "Precio_MONTES": 649.93, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HIV URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 649.93, "Precio_MONTES": 649.93, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HLA B27 AG HISTOCOMPATIBILIDAD", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HLA DQ2-DQ8", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HOMOCISTEINA", "Cantidad_2025": 1, "Precio_ANDA": 2306.95, "Precio_MONTES": 1988.8, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HOMOVANILICO, ACIDO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HPV TIPIFICACION POR PCR (CEPILLADO CERVICAL)", "Cantidad_2025": 150, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HPV TIPIFICACION POR PCR (CEPILLADO URETRAL)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HTLV 1-2  ANTICUERPOS SCREENING O CONFIRMATORIO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "IDENTIFICACION DE AGENTE, AISLAMIENTO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "IGF -1 (SOMATOMEDINA C)", "Cantidad_2025": 0, "Precio_ANDA": 8018.13, "Precio_MONTES": 3190.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "IGF-BP3", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INDICE ALBUMINURIA/CREATININURIA EN ORINA AISLADA", "Cantidad_2025": 19, "Precio_ANDA": 165.12, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INDICES DE RIESGO ARTERIOSCLEROTICOS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "PERFIL LIPIDICO", "Sin_Cotizar": false}, {"Examen": "INFLIXIMAB CUANTIFICACION + ANTICUERPOS ANTI INFLIXIMAB", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INHIBINA A", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INHIBINA B", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INMUNOFENOTIPO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INMUNOFENOTIPO EN MEDULA OSEA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INMUNOFENOTIPO EN SANGRE PERIFERICA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INMUNOFIJACION EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INMUNOFIJACION EN SUERO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INMUNOGLOBULINA A (IGA)", "Cantidad_2025": 94, "Precio_ANDA": 649.93, "Precio_MONTES": 649.93, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INMUNOGLOBULINA D", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INMUNOGLOBULINA E (IGE)", "Cantidad_2025": 20, "Precio_ANDA": 1425.1587223076358, "Precio_MONTES": 1425.16, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INMUNOGLOBULINA G (IGG)", "Cantidad_2025": 2, "Precio_ANDA": 649.93, "Precio_MONTES": 649.93, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INMUNOGLOBULINA G, SUBTIPOS", "Cantidad_2025": 0, "Precio_ANDA": 649.93, "Precio_MONTES": 649.93, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INMUNOGLOBULINA M (IGM)", "Cantidad_2025": 1, "Precio_ANDA": 649.93, "Precio_MONTES": 649.93, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INSULINA BASAL", "Cantidad_2025": 27, "Precio_ANDA": 926.29, "Precio_MONTES": 926.29, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INSULINA BASAL Y POS CARGA", "Cantidad_2025": 1, "Precio_ANDA": 1202.6606473376685, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INSULINA CURVA (B,30,60,90,120)", "Cantidad_2025": 0, "Precio_ANDA": 1521.18, "Precio_MONTES": 1521.18, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INTERFERON GAMMA (IFN-Y)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INTERLEUCINA 2, RECEPTOR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INTOLERANCIA PRIMARIA A LACTOSA - 2 VARIANTES MAS FRECUENTES", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "IRREGULARES, AC. INVESTIGACION", "Cantidad_2025": 3, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "IRREGULARES, AC. TITULACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "JAK2", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "JAK2 GEN - SECUENCIACION DEL EXON 12", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "JO-1, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "KPTT", "Cantidad_2025": 122, "Precio_ANDA": 163.95, "Precio_MONTES": 447.7, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LA/SSB, ANTI AC.", "Cantidad_2025": 2, "Precio_ANDA": 2931.12, "Precio_MONTES": 2931.12, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LACTATO VENOSO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LAMOTRIGINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LDH (LACTATODESHIDROGENASA)", "Cantidad_2025": 110, "Precio_ANDA": 614.8, "Precio_MONTES": 614.8, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LEGIONELLA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LEPTINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LEVETIRACETAM", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LH", "Cantidad_2025": 25, "Precio_ANDA": 1147.62, "Precio_MONTES": 1147.62, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LH EN EL DIA", "Cantidad_2025": 0, "Precio_ANDA": 1147.62, "Precio_MONTES": 1147.62, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LIPASA PANCREATICA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LIPOPROTEINA  A", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LIQUIDO DE PUNCION, ESTUDIO BACTERIOLOGICO", "Cantidad_2025": 0, "Precio_ANDA": 607.77, "Precio_MONTES": 607.77, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LIQUIDO SINOVIAL, CITOQUIMICO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LISIS DE EUGLOBULINAS (VON KAULA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LITIO", "Cantidad_2025": 1, "Precio_ANDA": 386.44, "Precio_MONTES": 386.44, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "LKM, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MACROAMILASEMIA", "Cantidad_2025": 0, "Precio_ANDA": 94.85, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MACROPROLACTINA, IDENTIFICACION", "Cantidad_2025": 0, "Precio_ANDA": 1114.83, "Precio_MONTES": 1114.83, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MAG (GLICOPROTEINA ASOCIADA A MIELINA), AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MAGNESIO EN ORINA  AISLADA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MAGNESIO EN ORINA  DE 24H", "Cantidad_2025": 0, "Precio_ANDA": 193.22, "Precio_MONTES": 193.22, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MAGNESIO EN SANGRE", "Cantidad_2025": 7, "Precio_ANDA": 195.66, "Precio_MONTES": 195.66, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MANGANESO EN SUERO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MARIHUANA (DELTA 9-CO0H-THC) SCREENING", "Cantidad_2025": 2, "Precio_ANDA": 973.14, "Precio_MONTES": 973.14, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MATRIX METALOPROTEINASA-9", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MELANOCITOS, HORMONA ESTIMULANTE ALFA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MERCURIO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "METANEFRINAS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "METANEFRINAS EN ORINA DE 24H", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "METANFETAMINAS EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "METILACION DE LA  REGION 11P ASOCIADA  A SILVER RUSSELL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "METILMALONICO, ACIDO EN SUERO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "METILMALONICO. ACIDO EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MICOLOGICO, CULTIVO", "Cantidad_2025": 100, "Precio_ANDA": 386.44, "Precio_MONTES": 875.6, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MICOLOGICO, ESTUDIO DIRECTO", "Cantidad_2025": 100, "Precio_ANDA": 386.44, "Precio_MONTES": 875.6, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MICOSIS EN MATERIA FECAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MICROBIOTA INTESTINAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MICROSOMALES (TPO) , AC.", "Cantidad_2025": 65, "Precio_ANDA": 1751.88, "Precio_MONTES": 1751.88, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MICROSOMALES (TPO), AC URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 1751.88, "Precio_MONTES": 1751.88, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MIELOGRAMA (NO INCLUYE PUNCION)", "Cantidad_2025": 0, "Precio_ANDA": 2984.99, "Precio_MONTES": 5966.4, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MIELOMA MULTIPLE FISH", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MIOGLOBINA", "Cantidad_2025": 0, "Precio_ANDA": 5823.59, "Precio_MONTES": 2148.3, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MIOPATIA NECROTIZANTE, PANEL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MITOCONDRIALES (AMA), ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MOG (GLICOPROTEINA DE MIELINA DE OLIGODENDROCITOS), IGG1", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MONONUCLEOSIS (PAUL BUNELL)", "Cantidad_2025": 1, "Precio_ANDA": 427.43, "Precio_MONTES": 427.43, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MPL ESTUDIO MOLECULAR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MTHFR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MUSCULO LISO (ASMA), ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MUTACIONES DEL DOMINIO BCR-ABL KINASA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MYCOBACTERIUM TUBERCULOSIS - BIOLOGIA MOLECULAR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MYCOPLASMA GENITALIUM POR BIOLOGIA MOLECULAR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "TGI (TRACTO GENITAL INFERIOR), PANEL", "Sin_Cotizar": false}, {"Examen": "MYCOPLASMA PNEUMONIAE (IGG,IGM) SEROLOGIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "MYCOPLASMAS UROGENITALES", "Cantidad_2025": 10, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "TGI (TRACTO GENITAL INFERIOR), PANEL", "Sin_Cotizar": false}, {"Examen": "N-METILHISTAMINA EN ORINA 24H", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "NEISSERIA GONORRHOEAE POR BIOLOGIA MOLECULAR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "TGI (TRACTO GENITAL INFERIOR), PANEL", "Sin_Cotizar": false}, {"Examen": "NENA O VARON", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "NEUMOCOCO IGG, AC. - 23 SEROTIPOS", "Cantidad_2025": 0, "Precio_ANDA": 1683.96, "Precio_MONTES": 1683.96, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "NEUMOCOCO, ANTIGENO EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": 1683.96, "Precio_MONTES": 1683.96, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "NICOTINA (COTININA EN ORINA)", "Cantidad_2025": 1, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "NOROVIRUS GI Y GII EN MATERIA FECAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "NUCLEARES (ANA), ANTI AC.", "Cantidad_2025": 26, "Precio_ANDA": 1568.68, "Precio_MONTES": 825.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "OPIACEOS EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ORGANICOS, ACIDOS EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ORINA COMPLETA", "Cantidad_2025": 668, "Precio_ANDA": 94.85, "Precio_MONTES": 94.85, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ORINA MINUTADA (RECUENTO DE ADDIS)", "Cantidad_2025": 0, "Precio_ANDA": 188.54, "Precio_MONTES": 188.54, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "OSMOLARIDAD PLASMATICA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "OSMOLARIDAD URINARIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "OSTEOCALCINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "OVARIO, ANTICUERPOS IGG ANTI", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "OXALEMIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "OXALURIA EN ORINA", "Cantidad_2025": 3, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "OXALURIA EN ORINA  AISLADA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "OXCARBAZEPINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "P24, ANTIGENEMIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PAI", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PAPANICOLAOU", "Cantidad_2025": 57, "Precio_ANDA": 696.77, "Precio_MONTES": 696.77, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PAPANICOLAOU ANAL", "Cantidad_2025": 0, "Precio_ANDA": 696.77, "Precio_MONTES": 696.77, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PAPP-A", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PARANEOPLASICOS, EVALUACION DE AUTOANTICUERPOS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PARASITOLOGICO, ESTUDIO", "Cantidad_2025": 1, "Precio_ANDA": 1747.2, "Precio_MONTES": 1747.2, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PARASITOS DETECTADOS POR PACIENTE, IDENTIFICACION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PARVOVIRUS B19  (IGG+ IGM), AC", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PARVOVIRUS POR PCR CUALITATIVO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PENICILINA G, IGE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PENICILINA V, IGE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PEPTIDO C", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PH URINARIO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PIRUVICO, ACIDO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PLA2R ANTI, AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PLAQUETARIOS, AC. ANTI", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PLAQUETAS, RECUENTO CON CITRATO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PLASMA POBRE EN PLAQUETAS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PLASMINOGENO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PLGF (FACTOR DE CRECIMIENTO PLACENTARIO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PLOMBEMIA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PNEUMOCYSTIS JIROVECII (POR INMUNOFLUORESCENCIA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "POBLACION LIFOCITARIA AMPLIADA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "POBLACION LINFOCITARIA PEDIATRICA (MADURACION LINF. T RO/RA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "POBLACION LINFOCITARIA SIMPLE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "POBLACION LINFONCITARIA AMPLIADA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "POBLACIONES LINFOCITARIAS COMPLETA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "POBLACIONES LINFOCITARIAS SIMPLE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "POLIMERASA III IGG, ARN AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PORFIRINAS EN MATERIA FECAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PORFIRINAS EN ORINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PORFIRINAS EN SANGRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "POTASIO EN ORINA  DE 24H", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "POTASIO EN ORINA AISLADA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "POTASIO EN SUERO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "IONOGRAMA  EN SANGRE (NA,K,CL)", "Sin_Cotizar": false}, {"Examen": "PREGNENOLONA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PREPARADO RICO EN PLAQUETAS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PRO BNP", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROCALCITONINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROGESTERONA", "Cantidad_2025": 9, "Precio_ANDA": 1776.47, "Precio_MONTES": 1590.6, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROGESTERONA EN EL DIA", "Cantidad_2025": 0, "Precio_ANDA": 1776.47, "Precio_MONTES": 1590.6, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROLACTINA", "Cantidad_2025": 26, "Precio_ANDA": 1114.83, "Precio_MONTES": 1114.83, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROLACTINA EN EL DIA", "Cantidad_2025": 0, "Precio_ANDA": 1114.83, "Precio_MONTES": 1114.83, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROTEINA C", "Cantidad_2025": 0, "Precio_ANDA": 206.1, "Precio_MONTES": 206.1, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROTEINA C  REACTIVA", "Cantidad_2025": 72, "Precio_ANDA": 206.1, "Precio_MONTES": 206.1, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROTEINA S LIBRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROTEINAS EN ORINA  DE 24H", "Cantidad_2025": 1, "Precio_ANDA": 545.71, "Precio_MONTES": 545.71, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROTEINAS EN ORINA AISLADA", "Cantidad_2025": 0, "Precio_ANDA": 545.71, "Precio_MONTES": 545.71, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROTEINAS TOTALES EN SANGRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "HEPATICO, FUNCIONAL", "Sin_Cotizar": false}, {"Examen": "PROTEINOGRAMA ELECTROFORETICO (CANINO/FELINO) SANGRE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROTEINOGRAMA ELECTROFORETICO EN ORINA", "Cantidad_2025": 1, "Precio_ANDA": 736.59, "Precio_MONTES": 2545.5, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PROTEINOGRAMA ELECTROFORETICO EN SANGRE", "Cantidad_2025": 18, "Precio_ANDA": 405.18, "Precio_MONTES": 1750.1, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PSA LIBRE (ANTIGENO PROSTATICO ESPECIFICO) URGENTE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PSA LIBRE (ANT\u00cdGENO PROST\u00c1TICO ESPEC\u00cdFICO)", "Cantidad_2025": 1, "Precio_ANDA": 1456.7768698033683, "Precio_MONTES": 1456.78, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PSA TOTAL (ANTIGENO PROSTATICO ESPECIFICO)", "Cantidad_2025": 96, "Precio_ANDA": 1456.7768698033683, "Precio_MONTES": 1456.78, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PSA TOTAL (ANTIGENO PROSTATICO ESPECIFICO) URGENTE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PSA TOTAL + PSA LIBRE (ANTIGENO PROSTATICO ESPECIFICO)", "Cantidad_2025": 93, "Precio_ANDA": 1456.78, "Precio_MONTES": 1456.78, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PTH INTACTA (PARATHORMONA)", "Cantidad_2025": 11, "Precio_ANDA": 2277.68, "Precio_MONTES": 1432.2, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PTH INTACTA (PARATHORMONA) URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 2277.68, "Precio_MONTES": 1432.2, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "PUNCION MEDULA OSEA (SOLO ACTO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "QUANTIFERON", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RECARGO DOMICILIO FUERA DE ZONA", "Cantidad_2025": 2, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RECARGO DOMICILIO MONTEVIDEO", "Cantidad_2025": 21, "Precio_ANDA": 500.04, "Precio_MONTES": 500.04, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RECARGO FERIADO O FUERA DE HORA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RECARGO OPERATIVO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RECARGO URGENCIA BIOQUIIMICA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RECARGO URGENCIA INMUNOANALISIS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RECARGO URGENCIA INMUNODIAGNOSTICO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RENINA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RESISTENCIA PROTEINA C ACTIVADA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RESPIRATORIO QIASTAT, PANEL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RETICULOCITOSIS", "Cantidad_2025": 0, "Precio_ANDA": 67.92, "Precio_MONTES": 158.4, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RETINOL BINDING PROTEIN", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RETINOL BINDING PROTEIN EN ORINA DE 24H", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RICKETTSIA CONORII (IGG, IGM), AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RNP, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RO/SSA, ANTI  AC.", "Cantidad_2025": 2, "Precio_ANDA": 2931.12, "Precio_MONTES": 2931.12, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ROTAVIRUS EN MATERIA FECAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RUBEOLA IGG", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "RUBEOLA IGM", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SACCHAROMYCES CEREVISIAE (ASCA) IGA, AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SACCHAROMYCES CEREVISIAE (ASCA) IGG, AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SARAMPION IGG+IGM", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SARS COV-2, ANTICUERPOS IGG POR ELFA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SARS COV-2, ANTICUERPOS IGG+IGM POR ELFA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SARS COV-2, ANTICUERPOS IGM POR ELFA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SARS COV-2, DETECCION POR PCR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SARS COV-2, TOMA DOMICILIO FUERA DE ZONA MVD / C.DE LA COSTA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SARS COV-2, TOMA DOMICILIO MONTEVIDEO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SCL-70, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SELENIO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SEROTONINA EN SUERO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SERVICIO DE EXTRACCION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SERVICIO DE RECOLECCION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SFLT-1/PLGF, RATIO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SHBG (GLOBULINA LIGADORA DE ESTEROIDES)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SIDEREMIA, HIERRO EN SANGRE", "Cantidad_2025": 74, "Precio_ANDA": 500.04, "Precio_MONTES": 500.04, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SIFILIS, SCREENING", "Cantidad_2025": 1188, "Precio_ANDA": 240.06, "Precio_MONTES": 240.06, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SM,  ANTI AC.", "Cantidad_2025": 2, "Precio_ANDA": 2931.12, "Precio_MONTES": 2931.12, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SODIO EN ORINA  AISLADA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SODIO EN ORINA DE 24H", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SODIO EN SUERO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "IONOGRAMA  EN SANGRE (NA,K,CL)", "Sin_Cotizar": false}, {"Examen": "STREPTOCOCCUS AGALACTIAE (GRUPO B) SCREENING EMBARAZO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "STREPTOCOCCUS PYOGENES (GRUPO A) -  TEST RAPIDO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "SUDOR TEST", "Cantidad_2025": 2, "Precio_ANDA": 509.4, "Precio_MONTES": 6364.6, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "T3 LIBRE", "Cantidad_2025": 315, "Precio_ANDA": 1030.52, "Precio_MONTES": 858.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "T3 REVERSA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "T3 TOTAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "T4 LIBRE", "Cantidad_2025": 316, "Precio_ANDA": 1030.52, "Precio_MONTES": 858.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "T4 TOTAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TACROLIMUS (FKINEMIA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TEOFILINA", "Cantidad_2025": 0, "Precio_ANDA": 1366.61, "Precio_MONTES": 1366.61, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TESTOSTERONA BIODISPONIBLE (CALCULADA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TESTOSTERONA LIBRE", "Cantidad_2025": 0, "Precio_ANDA": 1761.25, "Precio_MONTES": 1761.25, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TESTOSTERONA LIBRE CALCULADA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TESTOSTERONA LIBRE Y TOTAL", "Cantidad_2025": 22, "Precio_ANDA": 1761.25, "Precio_MONTES": 1761.25, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TESTOSTERONA TOTAL", "Cantidad_2025": 6, "Precio_ANDA": 1812.77, "Precio_MONTES": 1812.77, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TIEMPO DE PROTROMBINA + INR", "Cantidad_2025": 174, "Precio_ANDA": 163.95, "Precio_MONTES": 163.95, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TIEMPO DE TROMBINA", "Cantidad_2025": 0, "Precio_ANDA": 163.95, "Precio_MONTES": 163.95, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TIROGLOBULINA", "Cantidad_2025": 1, "Precio_ANDA": 1783.5, "Precio_MONTES": 1751.88, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TIROGLOBULINA, AC URGENTE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TIROGLOBULINA, ANTICUERPO", "Cantidad_2025": 64, "Precio_ANDA": 1783.4977272592682, "Precio_MONTES": 1751.88, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TIROTROPINA RECEPTOR, AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TITULO PANEL 506", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TOPIRAMATO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TOXICOLOGICO BASICO, SCREENING", "Cantidad_2025": 0, "Precio_ANDA": 990.7, "Precio_MONTES": 990.7, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TOXOCARA CANIS", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TOXOIDE TETANICO, AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TOXOPLASMOSIS AVIDEZ", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TOXOPLASMOSIS IGG", "Cantidad_2025": 6, "Precio_ANDA": 1427.5, "Precio_MONTES": 1427.5, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TOXOPLASMOSIS IGG URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 1427.5, "Precio_MONTES": 1427.5, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TOXOPLASMOSIS IGM", "Cantidad_2025": 6, "Precio_ANDA": 1428.67, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TOXOPLASMOSIS IGM URGENTE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": 1428.67, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TPMT", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TRANSAMINASA GLUTAMICOPIRUVICA (GPT)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "HEPATICO, FUNCIONAL", "Sin_Cotizar": false}, {"Examen": "TRANSAMINASA OXALACETICA (GOT)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "HEPATICO, FUNCIONAL", "Sin_Cotizar": false}, {"Examen": "TRANSFERRINA", "Cantidad_2025": 64, "Precio_ANDA": 867.74, "Precio_MONTES": 867.74, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TRANSGLUTAMINASA IGA,  ANTI AC.", "Cantidad_2025": 62, "Precio_ANDA": 3082.18, "Precio_MONTES": 3082.18, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TRANSGLUTAMINASA IGG, ANTI AC.", "Cantidad_2025": 0, "Precio_ANDA": 3082.18, "Precio_MONTES": 3082.18, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TREPONEMA", "Cantidad_2025": 5, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TRICHOMONAS VAGINALIS POR BIOLOGIA MOLECULAR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "TGI (TRACTO GENITAL INFERIOR), PANEL", "Sin_Cotizar": false}, {"Examen": "TRIGLICERIDOS", "Cantidad_2025": 649, "Precio_ANDA": 427.43, "Precio_MONTES": 427.43, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TRIGLICERIDOS A 2 HORAS", "Cantidad_2025": 0, "Precio_ANDA": 427.43, "Precio_MONTES": 427.43, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TRIPTASA SERICA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TRIPTOFANO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TROMBOELASTOGRAMA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TROPONINA I", "Cantidad_2025": 0, "Precio_ANDA": 729.56, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TROPONINA T ULTRA SENSIBLE", "Cantidad_2025": 0, "Precio_ANDA": 2387.0, "Precio_MONTES": 3080.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TSH", "Cantidad_2025": 697, "Precio_ANDA": 1030.52, "Precio_MONTES": 858.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TSI (INMUNOGLOBULINA TIROESTIMULANTE)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "UNITY COMPLETE (DESPISTAJE DE ANEUPLOIDIAS & PORTADOR)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "UNITY CONDICIONES CROMOSOMICAS (DESPISTAJE DE ANEUPLOIDIAS)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "UREA EN ORINA  AISLADA", "Cantidad_2025": 2, "Precio_ANDA": 66.75, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "UREA EN ORINA  DE 24H", "Cantidad_2025": 2, "Precio_ANDA": 66.75, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "UREA EN SANGRE", "Cantidad_2025": 536, "Precio_ANDA": 93.68, "Precio_MONTES": 154.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "UROCULTIVO (BACTERIURIA CUANTITATIVA)", "Cantidad_2025": 262, "Precio_ANDA": 552.73, "Precio_MONTES": 1650.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "UROCULTIVO POR CATETERISMO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VALPROICO 1 MEDICION", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VAN DE KAMER", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VARICELA  ZOSTER (IGG,IGM), AC.", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VDRL (WASSERMANN)", "Cantidad_2025": 197, "Precio_ANDA": 240.06, "Precio_MONTES": 240.06, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VEGF - FACTOR DE CRECIMIENTO ENDOTELIAL VASCULAR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VELOCIDAD DE ERITROSEDIMENTACION (VES)", "Cantidad_2025": 289, "Precio_ANDA": 970.79, "Precio_MONTES": 3580.5, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VIRUS RESPIRATORIO -  INFLUENZA A Y B (TEST RAPIDO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VIRUS RESPIRATORIO - ADENOVIRUS (TEST RAPIDO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VIRUS RESPIRATORIO - SINCITIAL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA A (RETINOL)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA B1 (TIAMINA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA B12", "Cantidad_2025": 111, "Precio_ANDA": 1377.15, "Precio_MONTES": 1377.15, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA B12 URGENTE", "Cantidad_2025": 0, "Precio_ANDA": 1377.15, "Precio_MONTES": 1377.15, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA B2", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA B3 (NIACINA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA B5 (ACIDO PANTOTENICO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA B6", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA B7, H (BIOTINA)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA C (ACIDO ASCORBICO)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA D3 (1,25-OH)", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA D3 (25-OH)", "Cantidad_2025": 389, "Precio_ANDA": 3022.46, "Precio_MONTES": 1153.9, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA E", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VITAMINA K1", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VON WILLEBRAND", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VON WILLEBRAND MULTIMEROS DEL FACTOR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "VORICONAZOL", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "X-FRAGIL CONFIRMATORIO POR TP-PCR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "X-FRAGIL SCREENING POR PCR", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "YODO", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ZINC", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATICO, FUNCIONAL", "Cantidad_2025": 3213, "Precio_ANDA": 659.2969274110098, "Precio_MONTES": 1045.0, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "IONOGRAMA  EN SANGRE (NA,K,CL)", "Cantidad_2025": 1404, "Precio_ANDA": 427.4305124423066, "Precio_MONTES": 716.1, "Panel_Asociado": "", "Sin_Cotizar": null}, {"Examen": "COCIENTE PROT/CREA ORINA AISLADA", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": null}, {"Examen": "PERFIL COMPLETO METLIFE", "Cantidad_2025": 0, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": null}, {"Examen": "PERFIL LIPIDICO", "Cantidad_2025": 3888, "Precio_ANDA": 659.2969274110098, "Precio_MONTES": 659.3, "Panel_Asociado": "", "Sin_Cotizar": null}, {"Examen": "TGI (TRACTO GENITAL INFERIOR), PANEL", "Cantidad_2025": 40, "Precio_ANDA": null, "Precio_MONTES": 3977.6, "Panel_Asociado": "", "Sin_Cotizar": null}, {"Examen": "CARNE DE SALUD", "Cantidad_2025": 3181, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FUNCIONAL TIROIDEO (TSH,T4L,T3L)", "Cantidad_2025": 933, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CARNE DE SALUD SIN ORINA", "Cantidad_2025": 534, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "HEPATICO, FUNCIONAL+ENZIMOGRAMA", "Cantidad_2025": 470, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CRASIS SANGUINEA", "Cantidad_2025": 366, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "ENZIMOGRAMA HEPATICO", "Cantidad_2025": 360, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "METABOLISMO DEL HIERRO", "Cantidad_2025": 171, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TIROIDEOS (TG/TPO), AC", "Cantidad_2025": 128, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "COPROPARASITARIO+ESPATULA ADHESIVA", "Cantidad_2025": 22, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FUNCIONAL RENAL", "Cantidad_2025": 20, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TOXOPLASMOSIS (IGG+IGM)", "Cantidad_2025": 12, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CREATININA DEPURACION (CLEARANCE)", "Cantidad_2025": 8, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "FUNCIONAL TIROIDEO (T3L-T4L-TSH)", "Cantidad_2025": 6, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GRUPO SANGUINEO + FACTOR RH", "Cantidad_2025": 6, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "GRUPO SANGUINEO+FACTOR RH", "Cantidad_2025": 4, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "UREA DEPURACION (CLEARANCE)", "Cantidad_2025": 4, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "NICOTINA+MARIHUANA+COCAINA", "Cantidad_2025": 3, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "TUBERCULOSIS, PANEL", "Cantidad_2025": 3, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "CITOMEGALOVIRUS (IGG+IGM)", "Cantidad_2025": 2, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}, {"Examen": "INSULINA + GLUCOSA,  BASAL/POS CARGA", "Cantidad_2025": 2, "Precio_ANDA": null, "Precio_MONTES": null, "Panel_Asociado": "", "Sin_Cotizar": false}];
+
+const PANEL_MAP = {
+  'CARNE DE SALUD': ['COLESTEROL TOTAL','GLUCOSA EN SANGRE','SIFILIS, SCREENING'],
+  'CARNE DE SALUD CON ORINA': ['COLESTEROL TOTAL','GLUCOSA EN SANGRE','ORINA COMPLETA','VDRL (WASSERMANN)'],
+  'CARNE DE SALUD SIN ORINA': ['COLESTEROL TOTAL','GLUCOSA EN SANGRE','VDRL (WASSERMANN)'],
+  'CHLAMYDIAS SEROLOGIA': ['CHLAMYDIA PNEUMONIAE IGG, SEROLOGIA','CHLAMYDIA PNEUMONIAE IGM, SEROLOGIA','CHLAMYDIA PSITACI IGG, SEROLOGIA','CHLAMYDIA PSITACI IGM, SEROLOGIA','CHLAMYDIA TRACHOMATIS IGG, SEROLOGIA','CHLAMYDIA TRACHOMATIS IGM, SEROLOGIA'],
+  'CITOMEGALOVIRUS (IGG+IGM)': ['CITOMEGALOVIRUS IGG','CITOMEGALOVIRUS IGM'],
+  'CRASIS SANGUINEA': ['FIBRINOGENO','KPTT','TIEMPO DE PROTROMBINA + INR'],
+  'ENZIMOGRAMA CARDIACO': ['CPK MB (CREATINA QUINASA ISO CARDIACA)','CPK TOTAL'],
+  'ENZIMOGRAMA HEPATICO': ['COLINESTERASA','FOSFATASA ALCALINA','GAMMAGLUTAMILTRANSPEPTIDASA','LDH (LACTATODESHIDROGENASA)','TRANSAMINASA GLUTAMICOPIRUVICA (GPT)','TRANSAMINASA OXALACETICA (GOT)'],
+  'ENZIMOGRAMA MUSCULAR (CPK, GOT, LDH)': ['CPK TOTAL','LDH (LACTATODESHIDROGENASA)','TRANSAMINASA OXALACETICA (GOT)'],
+  'FOSFOLIPIDICOS, ANTI AC.': ['BETA 2 GLICOPROTEINA I IGG, ANTI AC.','BETA 2 GLICOPROTEINA I IGM, ANTI AC.','CARDIOLIPINA IGG, ANTI AC.','CARDIOLIPINA IGM, ANTI AC.'],
+  'FUNCIONAL RENAL': ['ACIDO URICO EN SANGRE','CREATININA EN SANGRE','UREA EN SANGRE'],
+  'FUNCIONAL TIROIDEO (T3L-T4L-TSH)': ['T3 LIBRE','T4 LIBRE','TSH'],
+  'GRUPO SANGUINEO + FACTOR RH': ['FACTOR RH','GRUPO SANGUINEO (A,B,0)'],
+  'HEPATICO, FUNCIONAL': ['ALBUMINA EN SANGRE','BILIRRUBINAS EN SANGRE (TOTAL,DIRECTA E INDIRECTA)','COLESTEROL TOTAL','FOSFATASA ALCALINA','PROTEINAS TOTALES EN SANGRE','TRANSAMINASA GLUTAMICOPIRUVICA (GPT)','TRANSAMINASA OXALACETICA (GOT)'],
+  'HEPATICO, FUNCIONAL+ENZIMOGRAMA': ['ALBUMINA EN SANGRE','BILIRRUBINAS EN SANGRE (TOTAL,DIRECTA E INDIRECTA)','COLESTEROL TOTAL','COLINESTERASA','FOSFATASA ALCALINA','GAMMAGLUTAMILTRANSPEPTIDASA','LDH (LACTATODESHIDROGENASA)','PROTEINAS TOTALES EN SANGRE','TRANSAMINASA GLUTAMICOPIRUVICA (GPT)','TRANSAMINASA OXALACETICA (GOT)'],
+  'INSULINA + GLUCOSA,  BASAL/POS CARGA': ['GLUCOSA BASAL Y POS CARGA','INSULINA BASAL Y POS CARGA'],
+  'IONOGRAMA  EN SANGRE (NA,K,CL)': ['CLORO EN SANGRE','POTASIO EN SUERO','SODIO EN SUERO'],
+  'METABOLISMO DEL HIERRO': ['FERRITINA','SIDEREMIA, HIERRO EN SANGRE','TRANSFERRINA'],
+  'PERFIL LIPIDICO': ['COLESTEROL HDL','COLESTEROL LDL','COLESTEROL TOTAL','COLESTEROL VLDL','INDICES DE RIESGO ARTERIOSCLEROTICOS','TRIGLICERIDOS'],
+  'PSA TOTAL + LIBRE': ['PSA LIBRE (ANT\u00cdGENO PROST\u00c1TICO ESPEC\u00cdFICO)','PSA TOTAL (ANTIGENO PROSTATICO ESPECIFICO)'],
+  'TESTOSTERONA BIODISPONIBLE': ['SHBG (GLOBULINA LIGADORA DE ESTEROIDES)','TESTOSTERONA BIODISPONIBLE (CALCULADA)','TESTOSTERONA LIBRE CALCULADA','TESTOSTERONA TOTAL'],
+  'TGI (TRACTO GENITAL INFERIOR), PANEL': ['CHLAMYDIA TRACHOMATIS POR BIOLOGIA MOLECULAR','MYCOPLASMA GENITALIUM POR BIOLOGIA MOLECULAR','NEISSERIA GONORRHOEAE POR BIOLOGIA MOLECULAR','TRICHOMONAS VAGINALIS POR BIOLOGIA MOLECULAR'],
+  'TIROIDEOS (TG/TPO), AC': ['MICROSOMALES (TPO) , AC.','TIROGLOBULINA, ANTICUERPO'],
+  'TOXOPLASMOSIS (IGG+IGM)': ['TOXOPLASMOSIS IGG','TOXOPLASMOSIS IGM'],
+  'TUBERCULOSIS, PANEL': ['BACILOSCOPIA SERIADA - MUESTRA 1 DE 2','BACILOSCOPIA SERIADA - MUESTRA 2 DE 2','DERIVACION, CULTIVO'],
+  'UREA DEPURACION (CLEARANCE)': ['UREA EN ORINA  DE 24H','UREA EN SANGRE'],
+};
+const PANEL_NAMES = Object.keys(PANEL_MAP).sort();
+const PANEL_DESGLOSE = {"CARNE DE SALUD": {"COLESTEROL TOTAL": 1059, "GLUCOSA EN SANGRE": 1062, "SIFILIS, SCREENING": 1060}, "CARNE DE SALUD SIN ORINA": {"COLESTEROL TOTAL": 178, "GLUCOSA EN SANGRE": 178, "VDRL (WASSERMANN)": 178}, "CITOMEGALOVIRUS (IGG+IGM)": {"CITOMEGALOVIRUS IGG": 1, "CITOMEGALOVIRUS IGM": 1}, "COPROPARASITARIO+ESPATULA ADHESIVA": {"COPROPARASITARIO": 11, "ESPATULA ADHESIVA": 11}, "CRASIS SANGUINEA": {"FIBRINOGENO": 122, "KPTT": 122, "TIEMPO DE PROTROMBINA + INR": 122}, "CREATININA DEPURACION (CLEARANCE)": {"CREATININA EN ORINA DE 24H": 4, "CREATININA EN SANGRE": 4}, "ENZIMOGRAMA HEPATICO": {"COLINESTERASA": 60, "FOSFATASA ALCALINA": 60, "GAMMAGLUTAMILTRANSPEPTIDASA": 60, "LDH (LACTATODESHIDROGENASA)": 60, "TRANSAMINASA GLUTAMICOPIRUVICA (GPT)": 60, "TRANSAMINASA OXALACETICA (GOT)": 60}, "FUNCIONAL RENAL": {"ACIDO URICO EN SANGRE": 6, "CREATININA EN SANGRE": 7, "UREA EN SANGRE": 7}, "FUNCIONAL TIROIDEO (T3L-T4L-TSH)": {"T3 LIBRE": 2, "T4 LIBRE": 2, "TSH": 2}, "FUNCIONAL TIROIDEO (TSH,T4L,T3L)": {"T3 LIBRE": 311, "T4 LIBRE": 311, "TSH": 311}, "GRUPO SANGUINEO + FACTOR RH": {"FACTOR RH": 3, "GRUPO SANGUINEO (A,B,0)": 3}, "GRUPO SANGUINEO+FACTOR RH": {"FACTOR RH": 2, "GRUPO SANGUINEO (A,B,0)": 2}, "HEPATICO, FUNCIONAL": {"ALBUMINA EN SANGRE": 459, "BILIRRUBINAS EN SANGRE (TOTAL,DIRECTA E INDIRECTA)": 459, "COLESTEROL TOTAL": 459, "FOSFATASA ALCALINA": 459, "PROTEINAS TOTALES EN SANGRE": 459, "TRANSAMINASA GLUTAMICOPIRUVICA (GPT)": 459, "TRANSAMINASA OXALACETICA (GOT)": 459}, "HEPATICO, FUNCIONAL+ENZIMOGRAMA": {"ALBUMINA EN SANGRE": 47, "BILIRRUBINAS EN SANGRE (TOTAL,DIRECTA E INDIRECTA)": 47, "COLESTEROL TOTAL": 47, "COLINESTERASA": 47, "FOSFATASA ALCALINA": 47, "GAMMAGLUTAMILTRANSPEPTIDASA": 47, "LDH (LACTATODESHIDROGENASA)": 47, "PROTEINAS TOTALES EN SANGRE": 47, "TRANSAMINASA GLUTAMICOPIRUVICA (GPT)": 47, "TRANSAMINASA OXALACETICA (GOT)": 47}, "INSULINA + GLUCOSA,  BASAL/POS CARGA": {"GLUCOSA BASAL Y POS CARGA": 1, "INSULINA BASAL Y POS CARGA": 1}, "IONOGRAMA  EN SANGRE (NA,K,CL)": {"CLORO EN SANGRE": 468, "POTASIO EN SUERO": 468, "SODIO EN SUERO": 468}, "METABOLISMO DEL HIERRO": {"FERRITINA": 57, "SIDEREMIA, HIERRO EN SANGRE": 57, "TRANSFERRINA": 57}, "NICOTINA+MARIHUANA+COCAINA": {"COCAINA (BENZOILECGONINA),  SCREENING": 1, "MARIHUANA (DELTA 9-CO0H-THC) SCREENING": 1, "NICOTINA (COTININA EN ORINA)": 1}, "PERFIL LIPIDICO": {"COLESTEROL HDL": 648, "COLESTEROL LDL": 648, "COLESTEROL TOTAL": 648, "COLESTEROL VLDL": 648, "INDICES DE RIESGO ARTERIOSCLEROTICOS": 648, "TRIGLICERIDOS": 648}, "PROTEINOGRAMA ELECTROFORETICO EN ORINA": {"PROTEINAS EN ORINA  DE 24H": 1}, "TGI (TRACTO GENITAL INFERIOR), PANEL": {"CHLAMYDIA TRACHOMATIS POR BIOLOGIA MOLECULAR": 10, "MYCOPLASMA GENITALIUM POR BIOLOGIA MOLECULAR": 10, "NEISSERIA GONORRHOEAE POR BIOLOGIA MOLECULAR": 10, "TRICHOMONAS VAGINALIS POR BIOLOGIA MOLECULAR": 10}, "TIROIDEOS (TG/TPO), AC": {"MICROSOMALES (TPO) , AC.": 64, "TIROGLOBULINA, ANTICUERPO": 64}, "TOXOPLASMOSIS (IGG+IGM)": {"TOXOPLASMOSIS IGG": 6, "TOXOPLASMOSIS IGM": 6}, "TUBERCULOSIS, PANEL": {"BACILOSCOPIA SERIADA - MUESTRA 1 DE 2": 1, "BACILOSCOPIA SERIADA - MUESTRA 2 DE 2": 1, "DERIVACION, CULTIVO": 1}, "UREA DEPURACION (CLEARANCE)": {"UREA EN ORINA  DE 24H": 2, "UREA EN SANGRE": 2}};
+
+
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+// Deep copy data into mutable state
+let df = RAW_DATA.map(r => ({...r}));
+// Map by examen name for quick access
+const byName = () => {
+  const m = {};
+  df.forEach(r => m[r.Examen] = r);
+  return m;
+};
+
+let hiddenSet = new Set();
+let sortCol = null, sortDir = 1;
+let selectedExamen = null;
+let currentPanelName = null;
+
+// Load from localStorage
+try {
+  const saved = localStorage.getItem('comparador_state');
+  if (saved) {
+    const s = JSON.parse(saved);
+    // Apply saved prices/quantities/associations
+    if (s.changes) {
+      s.changes.forEach(c => {
+        const row = df.find(r => r.Examen === c.Examen);
+        if (row) Object.assign(row, c);
+      });
+    }
+    if (s.hidden) hiddenSet = new Set(s.hidden);
+  }
+} catch(e) {}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Fill panel datalist
+  const dl = document.getElementById('panel-list-dl');
+  PANEL_NAMES.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p;
+    dl.appendChild(opt);
+  });
+
+  // Fill filter radios
+  const filters = [['Todos','#607D8B'],['↑ Sube','#C62828'],['↓ Baja','#2E7D32'],['Sin MONTES','#E65100'],['Sin ambos','#C62828'],['Con ambos','#00695C']];
+  const fg = document.getElementById('filtros');
+  filters.forEach(([f,c],i) => {
+    fg.innerHTML += `<label style="border-color:${c};color:${c}"><input type="radio" name="filtro" value="${f}" ${i===0?'checked':''} onchange="render()"><span>${f}</span></label>`;
+  });
+
+  // Auto-hide cantidad 0 (sin panel asociado)
+  df.forEach(r => {
+    if(r.Cantidad_2025 === 0 && !r.Panel_Asociado) hiddenSet.add(r.Examen);
+  });
+
+  updateBadges();
+  render();
+  document.addEventListener('click', () => hideCtxMenu());
+  document.addEventListener('contextmenu', e => e.preventDefault());
+});
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const q = document.getElementById('searchExam').value.trim().toUpperCase();
+  const filtro = document.querySelector('input[name="filtro"]:checked')?.value || 'Todos';
+  const panelVal = (document.getElementById('cbPanel').value || '').trim().toUpperCase();
+  const soloAsoc = document.getElementById('chkAsoc').checked;
+  const mostrarOcultos = document.getElementById('chkOcultos').checked;
+
+  // Find panel
+  currentPanelName = null;
+  let panelExams = null;
+  if (panelVal) {
+    for (const k of PANEL_NAMES) {
+      if (k.toUpperCase() === panelVal || k.toUpperCase().includes(panelVal)) {
+        currentPanelName = k;
+        panelExams = new Set(PANEL_MAP[k]);
+        break;
+      }
+    }
+    document.getElementById('panel-info').textContent = panelExams ? `${panelExams.size} exámenes en el panel` : '';
+  } else {
+    document.getElementById('panel-info').textContent = '';
+  }
+
+  let rows = df.filter(r => {
+    if (panelExams && !panelExams.has(r.Examen)) return false;
+    if (q && !r.Examen.toUpperCase().includes(q)) return false;
+    if (soloAsoc && !r.Panel_Asociado) return false;
+    const pa = r.Precio_ANDA, pm = r.Precio_MONTES;
+    if (filtro === '↑ Sube' && !(pa != null && pm != null && pm > pa + 0.01)) return false;
+    if (filtro === '↓ Baja' && !(pa != null && pm != null && pm < pa - 0.01)) return false;
+    if (filtro === 'Sin MONTES' && pm != null) return false;
+    if (filtro === 'Sin ambos' && !(pa == null && pm == null)) return false;
+    if (filtro === 'Con ambos' && !(pa != null && pm != null)) return false;
+    if (!mostrarOcultos && hiddenSet.has(r.Examen)) return false;
+    if (mostrarOcultos && !hiddenSet.has(r.Examen)) return false;
+    return true;
+  });
+
+  // Add panel row at top
+  let panelRow = null;
+  if (currentPanelName) {
+    let pr = df.find(r => r.Examen === currentPanelName);
+    if (!pr) {
+      pr = {Examen: currentPanelName, Cantidad_2025: 0, Precio_ANDA: null, Precio_MONTES: null, Panel_Asociado: '', Sin_Cotizar: false};
+      df.push(pr);
+    }
+    panelRow = pr;
+  }
+
+  // Sort
+  if (sortCol !== null) {
+    rows.sort((a, b) => {
+      let av, bv;
+      if (sortCol === 0) { av = a.Examen; bv = b.Examen; return sortDir * av.localeCompare(bv); }
+      if (sortCol === 1) { av = a.Cantidad_2025||0; bv = b.Cantidad_2025||0; }
+      if (sortCol === 2) { av = a.Precio_ANDA??-1; bv = b.Precio_ANDA??-1; }
+      if (sortCol === 3) { av = a.Precio_MONTES??-1; bv = b.Precio_MONTES??-1; }
+      if (sortCol === 4) { av = (a.Precio_ANDA!=null&&a.Precio_MONTES!=null)?a.Precio_MONTES-a.Precio_ANDA:-999; bv = (b.Precio_ANDA!=null&&b.Precio_MONTES!=null)?b.Precio_MONTES-b.Precio_ANDA:-999; }
+      if (sortCol === 5) { av = (a.Precio_ANDA!=null&&a.Precio_MONTES!=null)?(a.Precio_MONTES-a.Precio_ANDA)*a.Cantidad_2025:-999; bv = (b.Precio_ANDA!=null&&b.Precio_MONTES!=null)?(b.Precio_MONTES-b.Precio_ANDA)*b.Cantidad_2025:-999; }
+      if (sortCol === 6) { av = rowClass(a); bv = rowClass(b); return sortDir * av.localeCompare(bv); }
+      return sortDir * (av - bv);
+    });
+  }
+
+  const allRows = panelRow ? [panelRow, ...rows.filter(r => r !== panelRow)] : rows;
+
+  let tot_anda = 0, tot_montes = 0;
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  allRows.forEach(r => {
+    const isPanel = (currentPanelName && r.Examen === currentPanelName);
+    const pa = r.Precio_ANDA, pm = r.Precio_MONTES;
+    const _pdVals = isPanel && PANEL_DESGLOSE[r.Examen] ? Object.values(PANEL_DESGLOSE[r.Examen]) : null;
+    const qty = (_pdVals && _pdVals.length) ? Math.min(..._pdVals) : (r.Cantidad_2025||0);
+    const paS = pa != null ? `$U ${fmt(pa)}` : '(sin precio)';
+    const pmS = pm != null ? `$U ${fmt(pm)}` : '(sin precio)';
+    let diuS = '—', ditS = '—', est = 'Sin precio', cls = 'sin';
+    if (pa != null && pm != null) {
+      const du = pm - pa, dt = du * qty;
+      diuS = (du >= 0 ? '+' : '') + '$U ' + fmt(du);
+      ditS = (dt >= 0 ? '+' : '') + '$U ' + fmt(dt);
+      if (du > 0.01) { cls='sube'; est='↑ SUBE'; }
+      else if (du < -0.01) { cls='baja'; est='↓ BAJA'; }
+      else { cls='igual'; est='= IGUAL'; }
+    }
+    if (r.Sin_Cotizar) { cls='sincot'; est='⛔ Sin cotizar'; }
+    if (r.Panel_Asociado && !isPanel) { cls='asoc'; est=`📋 ${r.Panel_Asociado}`; }
+    if (hiddenSet.has(r.Examen) && !isPanel) { cls='oculto'; est='🚫 Oculto'; }
+    if (isPanel) { cls='panel-row'; est='📋 PANEL'; }
+    if (pa != null) tot_anda += pa * qty;
+    if (pm != null) tot_montes += pm * qty;
+
+    const tr = document.createElement('tr');
+    tr.className = cls;
+    tr.dataset.examen = r.Examen;
+    const panel_d = isPanel ? PANEL_DESGLOSE[r.Examen] : null;
+    const qty_cell = panel_d
+      ? `<span style="cursor:pointer;color:#fff" onclick="showPanelDesglose('${r.Examen.replace(/'/g,"\\'")}',event)" title="Ver desglose de exámenes en este panel">${qty.toLocaleString()} <span style="font-size:11px;background:rgba(255,255,255,0.25);border-radius:3px;padding:1px 5px">📊</span></span>`
+      : qty.toLocaleString();
+    tr.innerHTML = `<td title="${r.Examen}">${r.Examen}</td><td class="num">${qty_cell}</td><td class="num">${paS}</td><td class="num">${pmS}</td><td class="num">${diuS}</td><td class="num">${ditS}</td><td class="est">${est}</td>`;
+    tr.addEventListener('contextmenu', e => { e.preventDefault(); showCtxMenu(e, r.Examen, isPanel); });
+    tr.addEventListener('dblclick', () => openModalPrecio(r.Examen, 'MONTES'));
+    tbody.appendChild(tr);
+  });
+
+  const dif = tot_montes - tot_anda;
+  document.getElementById('f-anda').textContent = `Total ANDA: $U ${fmt(tot_anda)}`;
+  document.getElementById('f-montes').textContent = `Total MONTES: $U ${fmt(tot_montes)}`;
+  document.getElementById('f-dif').textContent = `Diferencia: ${dif>=0?'+':''}$U ${fmt(dif)}`;
+  document.getElementById('showing').textContent = `Mostrando ${allRows.length.toLocaleString()} de ${df.length.toLocaleString()} exámenes`;
+
+  updateBadges();
+}
+
+function rowClass(r) {
+  const pa = r.Precio_ANDA, pm = r.Precio_MONTES;
+  if (r.Sin_Cotizar) return 'sincot';
+  if (r.Panel_Asociado) return 'asoc';
+  if (pa != null && pm != null) {
+    const du = pm - pa;
+    if (du > 0.01) return 'sube';
+    if (du < -0.01) return 'baja';
+    return 'igual';
+  }
+  return 'sin';
+}
+
+function fmt(n) {
+  if (n == null) return '—';
+  return parseFloat(n).toLocaleString('es-UY', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+// ── BADGES ───────────────────────────────────────────────────────────────────
+function updateBadges() {
+  const n_anda  = df.filter(r => r.Precio_ANDA != null).length;
+  const n_m     = df.filter(r => r.Precio_MONTES != null).length;
+  const n_ambos = df.filter(r => r.Precio_ANDA != null && r.Precio_MONTES != null).length;
+  const n_sube  = df.filter(r => r.Precio_ANDA != null && r.Precio_MONTES != null && r.Precio_MONTES > r.Precio_ANDA + 0.01).length;
+  const n_baja  = df.filter(r => r.Precio_ANDA != null && r.Precio_MONTES != null && r.Precio_MONTES < r.Precio_ANDA - 0.01).length;
+  const n_sinm  = df.filter(r => r.Precio_MONTES == null).length;
+  const n_sinab = df.filter(r => r.Precio_ANDA == null && r.Precio_MONTES == null).length;
+  document.getElementById('b-total').textContent  = df.length.toLocaleString();
+  document.getElementById('b-anda').textContent   = n_anda.toLocaleString();
+  document.getElementById('b-montes').textContent = n_m.toLocaleString();
+  document.getElementById('b-ambos').textContent  = n_ambos.toLocaleString();
+  document.getElementById('b-sube').textContent   = n_sube.toLocaleString();
+  document.getElementById('b-baja').textContent   = n_baja.toLocaleString();
+  document.getElementById('b-sinm').textContent   = n_sinm.toLocaleString();
+  document.getElementById('b-sinab').textContent  = n_sinab.toLocaleString();
+  document.getElementById('b-ocultos').textContent = hiddenSet.size.toLocaleString();
+}
+
+// ── PANEL ─────────────────────────────────────────────────────────────────────
+function onPanelInput() { render(); }
+function onPanelChange() { render(); }
+function limpiarPanel() {
+  document.getElementById('cbPanel').value = '';
+  document.getElementById('panel-info').textContent = '';
+  render();
+}
+
+// ── SORT ──────────────────────────────────────────────────────────────────────
+function sortBy(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  render();
+}
+
+// ── CONTEXT MENU ──────────────────────────────────────────────────────────────
+function showCtxMenu(e, examen, isPanel) {
+  selectedExamen = examen;
+  const row = df.find(r => r.Examen === examen);
+  const tieneA = row.Precio_ANDA != null;
+  const tieneM = row.Precio_MONTES != null;
+  const esOculto = hiddenSet.has(examen);
+  const panelActual = row.Panel_Asociado;
+  const sinCot = row.Sin_Cotizar;
+
+  let html = '';
+  if (!isPanel) {
+    html += `<div class="ctx-item" onclick="openModalPrecio('${esc(examen)}','ANDA')">${tieneA?'✏️':'➕'} ${tieneA?'Modificar':'Agregar'} precio ANDA</div>`;
+    html += `<div class="ctx-item" onclick="openModalPrecio('${esc(examen)}','MONTES')">${tieneM?'✏️':'➕'} ${tieneM?'Modificar':'Agregar'} precio MONTES</div>`;
+    html += `<div class="ctx-sep"></div>`;
+    html += `<div class="ctx-item" onclick="borrarPrecio('${esc(examen)}','ANDA')">🗑️ Borrar precio ANDA</div>`;
+    html += `<div class="ctx-item" onclick="borrarPrecio('${esc(examen)}','MONTES')">🗑️ Borrar precio MONTES</div>`;
+    html += `<div class="ctx-sep"></div>`;
+    html += `<div class="ctx-item" onclick="openModalCantidad('${esc(examen)}')">🔢 Cambiar cantidad</div>`;
+    html += `<div class="ctx-sep"></div>`;
+    html += `<div class="ctx-item" onclick="openModalAsocPrecios('${esc(examen)}')">🔗 Asociar precios de otro examen...</div>`;
+    if (panelActual) {
+      html += `<div class="ctx-item" onclick="desasociarPanel('${esc(examen)}')">🔗 Desasociar del panel «${esc(panelActual)}»</div>`;
+    } else {
+      html += `<div class="ctx-item" onclick="openModalAsocPanel('${esc(examen)}')">📋 Asociar a panel...</div>`;
+    }
+    html += `<div class="ctx-sep"></div>`;
+    if (sinCot) {
+      html += `<div class="ctx-item" onclick="toggleSinCotizar('${esc(examen)}',false)">↩ Quitar marca 'Sin cotizar'</div>`;
+    } else {
+      html += `<div class="ctx-item" onclick="toggleSinCotizar('${esc(examen)}',true)">⛔ Marcar como 'Sin cotizar'</div>`;
+    }
+    html += `<div class="ctx-sep"></div>`;
+    if (esOculto) {
+      html += `<div class="ctx-item" onclick="restaurarExamen('${esc(examen)}')">↩ Restaurar examen</div>`;
+    } else {
+      html += `<div class="ctx-item" onclick="ocultarExamen('${esc(examen)}')">🚫 Ocultar examen</div>`;
+    }
+  } else {
+    // Panel row
+    html += `<div class="ctx-item" onclick="openModalPrecio('${esc(examen)}','ANDA')">${tieneA?'✏️':'➕'} ${tieneA?'Modificar':'Agregar'} precio ANDA</div>`;
+    html += `<div class="ctx-item" onclick="openModalPrecio('${esc(examen)}','MONTES')">${tieneM?'✏️':'➕'} ${tieneM?'Modificar':'Agregar'} precio MONTES</div>`;
+    html += `<div class="ctx-sep"></div>`;
+    html += `<div class="ctx-item" onclick="openModalCantidad('${esc(examen)}')">🔢 Cambiar cantidad</div>`;
+  }
+  if (hiddenSet.size > 0) {
+    html += `<div class="ctx-sep"></div><div class="ctx-item" onclick="restaurarTodos()">↩ Restaurar todos (${hiddenSet.size} ocultos)</div>`;
+  }
+
+  const menu = document.getElementById('ctx-menu');
+  menu.innerHTML = html;
+  menu.style.display = 'block';
+  let x = e.clientX, y = e.clientY;
+  if (x + 250 > window.innerWidth) x = window.innerWidth - 255;
+  if (y + menu.offsetHeight > window.innerHeight) y = window.innerHeight - menu.offsetHeight - 5;
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+  setTimeout(() => document.addEventListener('click', hideCtxMenu, {once:true}), 10);
+}
+function hideCtxMenu() { document.getElementById('ctx-menu').style.display='none'; }
+function esc(s) { return s.replace(/'/g,"\\'"); }
+
+// ── OCULTAR ───────────────────────────────────────────────────────────────────
+function ocultarExamen(examen) { hiddenSet.add(examen); saveState(); render(); }
+function restaurarExamen(examen) { hiddenSet.delete(examen); saveState(); render(); }
+function restaurarTodos() { if(confirm(`¿Restaurar ${hiddenSet.size} exámenes ocultos?`)) { hiddenSet.clear(); saveState(); render(); } }
+
+// ── PRECIO MODAL ──────────────────────────────────────────────────────────────
+let _precioExamen = null, _precioTipo = null;
+function openModalPrecio(examen, tipo) {
+  hideCtxMenu();
+  _precioExamen = examen; _precioTipo = tipo;
+  const row = df.find(r => r.Examen === examen);
+  const esAnda = tipo === 'ANDA';
+  const valAct = esAnda ? row.Precio_ANDA : row.Precio_MONTES;
+  const refVal = esAnda ? row.Precio_MONTES : row.Precio_ANDA;
+  const refLbl = esAnda ? 'MONTES' : 'ANDA';
+  const color  = esAnda ? '#1565C0' : '#1A56A0';
+  document.getElementById('mprecio-hdr').style.background = color;
+  document.getElementById('mprecio-hdr').textContent = (valAct != null ? '✏️ Modificar' : '➕ Agregar') + ' precio ' + tipo;
+  document.getElementById('mprecio-exam').textContent = examen;
+  document.getElementById('mprecio-ref').textContent = `Precio ${refLbl} (referencia): ${refVal != null ? '$U ' + fmt(refVal) : '—'}`;
+  document.getElementById('mprecio-lbl').textContent = `Nuevo precio ${tipo} ($U):`;
+  const inp = document.getElementById('mprecio-input');
+  inp.value = valAct != null ? parseFloat(valAct).toFixed(2) : '';
+  openModal('modal-precio');
+  setTimeout(() => { inp.focus(); inp.select(); }, 100);
+}
+function savePrecio() {
+  const val = document.getElementById('mprecio-input').value.trim().replace(',','.');
+  const row = df.find(r => r.Examen === _precioExamen);
+  if (!row) return;
+  if (val === '') {
+    if (_precioTipo === 'ANDA') row.Precio_ANDA = null; else row.Precio_MONTES = null;
+  } else {
+    const n = parseFloat(val);
+    if (isNaN(n)) { alert('Ingrese un número válido. Ejemplo: 1250.50'); return; }
+    if (_precioTipo === 'ANDA') row.Precio_ANDA = n; else row.Precio_MONTES = n;
+  }
+  saveState(); closeModal('modal-precio'); render();
+}
+
+// ── BORRAR PRECIO ─────────────────────────────────────────────────────────────
+function borrarPrecio(examen, tipo) {
+  if (!confirm(`¿Borrar el precio ${tipo} de:\n\n${examen}?`)) return;
+  const row = df.find(r => r.Examen === examen);
+  if (tipo === 'ANDA') row.Precio_ANDA = null; else row.Precio_MONTES = null;
+  saveState(); render();
+}
+
+// ── CANTIDAD MODAL ────────────────────────────────────────────────────────────
+let _cantExamen = null;
+function openModalCantidad(examen) {
+  hideCtxMenu(); _cantExamen = examen;
+  const row = df.find(r => r.Examen === examen);
+  document.getElementById('mcant-exam').textContent = examen;
+  const inp = document.getElementById('mcant-input');
+  inp.value = row.Cantidad_2025 || 0;
+  openModal('modal-cantidad');
+  setTimeout(() => { inp.focus(); inp.select(); }, 100);
+}
+function saveCantidad() {
+  const val = parseInt(document.getElementById('mcant-input').value);
+  if (isNaN(val) || val < 0) { alert('Ingrese un número entero >= 0'); return; }
+  const row = df.find(r => r.Examen === _cantExamen);
+  row.Cantidad_2025 = val;
+  if (val > 0) hiddenSet.delete(_cantExamen);
+  else if (!row.Panel_Asociado) hiddenSet.add(_cantExamen);
+  saveState(); closeModal('modal-cantidad'); render();
+}
+
+// ── ASOCIAR PRECIOS MODAL ─────────────────────────────────────────────────────
+let _asocDestino = null, _asocOrigenRow = null;
+function openModalAsocPrecios(examen) {
+  hideCtxMenu(); _asocDestino = examen; _asocOrigenRow = null;
+  document.getElementById('masoc-dest').textContent = 'Destino: ' + examen;
+  document.getElementById('masoc-search').value = '';
+  filtrarAsocTable('');
+  openModal('modal-asoc-precios');
+  setTimeout(() => document.getElementById('masoc-search').focus(), 100);
+}
+function filtrarAsocTable(q) {
+  if (q === undefined) q = document.getElementById('masoc-search').value;
+  q = q.toUpperCase();
+  const tbody2 = document.getElementById('asoc-tbody');
+  tbody2.innerHTML = '';
+  df.filter(r => r.Examen !== _asocDestino && (!q || r.Examen.toUpperCase().includes(q))).forEach(r => {
+    const tr = document.createElement('tr');
+    if (r.Precio_ANDA != null || r.Precio_MONTES != null) tr.className = 'has-price';
+    tr.innerHTML = `<td>${r.Examen}</td><td class="num">${r.Precio_ANDA!=null?'$U '+fmt(r.Precio_ANDA):'—'}</td><td class="num">${r.Precio_MONTES!=null?'$U '+fmt(r.Precio_MONTES):'—'}</td>`;
+    tr.addEventListener('click', () => {
+      document.querySelectorAll('#asoc-tbody tr').forEach(t => t.style.background='');
+      tr.style.background = '#BBDEFB';
+      _asocOrigenRow = r;
+    });
+    tr.addEventListener('dblclick', () => { _asocOrigenRow = r; confirmarAsocPrecios(); });
+    tbody2.appendChild(tr);
+  });
+}
+function confirmarAsocPrecios() {
+  if (!_asocOrigenRow) { alert('Seleccioná un examen de la lista.'); return; }
+  const pa = _asocOrigenRow.Precio_ANDA, pm = _asocOrigenRow.Precio_MONTES;
+  const msg = `¿Asociar precios de:\n«${_asocOrigenRow.Examen}»\n→ «${_asocDestino}»?\n\nANDA: ${pa!=null?'$U '+fmt(pa):'—'}\nMONTES: ${pm!=null?'$U '+fmt(pm):'—'}`;
+  if (!confirm(msg)) return;
+  const dest = df.find(r => r.Examen === _asocDestino);
+  if (pa != null) dest.Precio_ANDA = pa;
+  if (pm != null) dest.Precio_MONTES = pm;
+  saveState(); closeModal('modal-asoc-precios'); render();
+}
+
+// ── ASOCIAR PANEL MODAL ───────────────────────────────────────────────────────
+let _panelDestino = null, _panelSeleccionado = null;
+function openModalAsocPanel(examen) {
+  hideCtxMenu(); _panelDestino = examen; _panelSeleccionado = null;
+  document.getElementById('mpanel-dest').textContent = 'Examen: ' + examen;
+  document.getElementById('mpanel-search').value = '';
+  filtrarPanelList('');
+  openModal('modal-asoc-panel');
+  setTimeout(() => document.getElementById('mpanel-search').focus(), 100);
+}
+function filtrarPanelList(q) {
+  if (q === undefined) q = document.getElementById('mpanel-search').value;
+  q = q.toUpperCase();
+  const container = document.getElementById('panel-list');
+  container.innerHTML = '';
+  PANEL_NAMES.filter(p => !q || p.toUpperCase().includes(q)).forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'panel-item';
+    div.textContent = p;
+    div.addEventListener('click', () => {
+      document.querySelectorAll('.panel-item').forEach(d => d.classList.remove('selected'));
+      div.classList.add('selected');
+      _panelSeleccionado = p;
+    });
+    div.addEventListener('dblclick', () => { _panelSeleccionado = p; confirmarAsocPanel(); });
+    container.appendChild(div);
+  });
+}
+function confirmarAsocPanel() {
+  if (!_panelSeleccionado) { alert('Seleccioná un panel.'); return; }
+  const row = df.find(r => r.Examen === _panelDestino);
+  row.Panel_Asociado = _panelSeleccionado;
+  hiddenSet.delete(_panelDestino); // no ocultar si está asociado
+  saveState(); closeModal('modal-asoc-panel'); render();
+}
+function desasociarPanel(examen) {
+  const row = df.find(r => r.Examen === examen);
+  row.Panel_Asociado = '';
+  saveState(); render();
+}
+
+// ── SIN COTIZAR ───────────────────────────────────────────────────────────────
+function toggleSinCotizar(examen, valor) {
+  const row = df.find(r => r.Examen === examen);
+  row.Sin_Cotizar = valor;
+  saveState(); render();
+}
+
+// ── MODAL HELPERS ─────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.addEventListener('keydown', e => { if(e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open')); });
+
+// ── GUARDAR ───────────────────────────────────────────────────────────────────
+function saveState() {
+  try {
+    // Save only changed rows (those different from original)
+    const changes = df.map(r => ({
+      Examen: r.Examen,
+      Precio_ANDA: r.Precio_ANDA,
+      Precio_MONTES: r.Precio_MONTES,
+      Cantidad_2025: r.Cantidad_2025,
+      Panel_Asociado: r.Panel_Asociado,
+      Sin_Cotizar: r.Sin_Cotizar
+    }));
+    localStorage.setItem('comparador_state', JSON.stringify({
+      changes,
+      hidden: [...hiddenSet]
+    }));
+    const now = new Date();
+    document.getElementById('saved').textContent = `✔ Guardado ${now.toLocaleTimeString('es-UY')}`;
+  } catch(e) {}
+}
+function guardarManual() {
+  saveState();
+  alert('Cambios guardados en el navegador.');
+}
+
+// ── EXPORT CSV ────────────────────────────────────────────────────────────────
+function exportarCSV() {
+  const cols = ['Examen','Cantidad_2025','Precio_ANDA','Precio_MONTES','Panel_Asociado','Sin_Cotizar'];
+  let csv = '\uFEFF' + cols.join(',') + '\r\n';
+  df.forEach(r => {
+    const row = cols.map(c => {
+      let v = r[c];
+      if (v == null) return '';
+      v = String(v);
+      if (v.includes(',') || v.includes('"') || v.includes('\n')) v = '"' + v.replace(/"/g,'""') + '"';
+      return v;
+    });
+    csv += row.join(',') + '\r\n';
+  });
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `comparativa_anda_montes_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+}
+
+function showPanelDesglose(panelName, e) {
+  if(e) e.stopPropagation();
+  const d = PANEL_DESGLOSE[panelName];
+  if(!d) return;
+  document.getElementById('mdesglose-title').textContent = '📊 ' + panelName;
+  const panelCount = Math.min(...Object.values(d));
+  let htm = `<div style="font-size:12px;color:#546E7A;margin-bottom:12px">Veces realizado el panel: <strong>${panelCount.toLocaleString()}</strong></div>`;
+  htm += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  htm += `<thead><tr style="background:#F5F5F5;font-size:11px;color:#666">
+    <th style="padding:5px 8px;text-align:left">Examen</th>
+    <th style="padding:5px 8px;text-align:right">Por panel</th>
+    <th style="padding:5px 8px;text-align:right;color:#C62828">Fuera</th>
+    <th style="padding:5px 8px;text-align:right">Total</th>
+  </tr></thead><tbody>`;
+  Object.entries(d).sort((a,b)=>b[1]-a[1]).forEach(([examen, qtyPanel]) => {
+    const rowTotal = (df.find(r=>r.Examen===examen)||{}).Cantidad_2025 || 0;
+    const fuera = Math.max(0, rowTotal - qtyPanel);
+    htm += `<tr style="border-bottom:1px solid #eee">
+      <td style="padding:7px 8px">🧪 ${examen}</td>
+      <td style="text-align:right;padding:7px 8px;font-weight:700;color:#2E7D32">${qtyPanel.toLocaleString()}</td>
+      <td style="text-align:right;padding:7px 8px;font-weight:700;color:#C62828">— ${fuera.toLocaleString()}</td>
+      <td style="text-align:right;padding:7px 8px;color:#546E7A">${rowTotal.toLocaleString()}</td>
+    </tr>`;
+  });
+  htm += '</tbody></table>';
+  document.getElementById('mdesglose-body').innerHTML = htm;
+  document.getElementById('modal-desglose').style.display='block';
+}
+
+// Make modal draggable
+function makeDraggable(modal) {
+  const hdr = modal.querySelector('.modal-hdr');
+  if(!hdr) return;
+  let ox=0, oy=0, mx=0, my=0;
+  hdr.style.cursor='move';
+  hdr.onmousedown = function(e) {
+    e.preventDefault();
+    mx=e.clientX; my=e.clientY;
+    document.onmousemove = function(e) {
+      ox=mx-e.clientX; oy=my-e.clientY;
+      mx=e.clientX; my=e.clientY;
+      modal.style.top=(modal.offsetTop-oy)+'px';
+      modal.style.left=(modal.offsetLeft-ox)+'px';
+      modal.style.transform='none';
+    };
+    document.onmouseup = function() {
+      document.onmousemove=null; document.onmouseup=null;
+    };
+  };
+}
+
+
+</script>
+
+<!-- MODAL DESGLOSE DRAGGABLE -->
+<div id="modal-desglose" style="display:none;position:fixed;inset:0;z-index:10000;pointer-events:none">
+  <div id="mdesglose-box" style="position:absolute;top:12%;left:50%;transform:translateX(-50%);background:#fff;border-radius:8px;min-width:520px;max-width:640px;box-shadow:0 8px 32px rgba(0,0,0,.4);pointer-events:all">
+    <div class="modal-hdr" style="background:#37474F;border-radius:8px 8px 0 0;user-select:none" id="mdesglose-title">📊 Desglose</div>
+    <div class="modal-body" id="mdesglose-body" style="max-height:55vh;overflow-y:auto;padding:16px 18px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-gray" onclick="document.getElementById('modal-desglose').style.display='none'">✖ Cerrar</button>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => { makeDraggable(document.getElementById('mdesglose-box')); });
+</script>
+
+</body>
+</html>
