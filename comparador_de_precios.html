@@ -924,9 +924,12 @@ async function _generarExcel() {
     if(pa!=null) totA+=pa*qty;
     if(pm!=null) totM+=pm*qty;
     const estado = _rowEstado(r, panelName);
+    const rowNum = idx + 2; // +1 header +1 base
     const row = ws.addRow([r.Examen, qty,
       pa!=null?pa:null, pm!=null?pm:null,
-      diu!==''?diu:null, dit!==''?dit:null, est]);
+      pa!=null&&pm!=null ? {formula:`D${rowNum}-C${rowNum}`} : null,
+      pa!=null&&pm!=null ? {formula:`E${rowNum}*B${rowNum}`} : null,
+      est]);
     // Formato número
     [3,4,5,6].forEach(c => {
       const cell = row.getCell(c);
@@ -935,9 +938,15 @@ async function _generarExcel() {
     applyRowStyle(row, estado, idx);
   });
 
-  // Fila totales
+  // Fila totales con fórmulas
+  const lastDataRow = rows.length + 1; // +1 por header
   ws.addRow([]);
-  const totRow = ws.addRow(['TOTALES', '', totA, totM, '', totM-totA, '']);
+  const totRow = ws.addRow(['TOTALES', '', null, null, '', null, '']);
+  const totRowNum = lastDataRow + 2;
+  // Total ANDA = SUMPRODUCT(B2:B{n} * C2:C{n})
+  totRow.getCell(3).value = { formula: `SUMPRODUCT(B2:B${lastDataRow},C2:C${lastDataRow})` };
+  totRow.getCell(4).value = { formula: `SUMPRODUCT(B2:B${lastDataRow},D2:D${lastDataRow})` };
+  totRow.getCell(6).value = { formula: `${totRowNum>0?'D'+totRowNum:0}-C${totRowNum}` };
   totRow.eachCell({includeEmpty:true}, cell => {
     cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.hdrBg}};
     cell.font={bold:true,color:{argb:'FF'+C.hdrFg},size:11};
@@ -970,11 +979,13 @@ async function _generarExcel() {
     if(pa!=null&&pm!=null){diu=pm-pa;dit=diu*qty;est=diu>0.01?'↑ SUBE':(diu<-0.01?'↓ BAJA':'= IGUAL');}
     if(pa!=null) totA2+=pa*qty;
     if(pm!=null) totM2+=pm*qty;
+    const rowNum = idx + 2;
     const row = ws2.addRow([r.Examen, qty,
       pa!=null?pa:null, pm!=null?pm:null,
-      diu!==''?diu:null, dit!==''?dit:null, est]);
+      pa!=null&&pm!=null ? {formula:`D${rowNum}-C${rowNum}`} : null,
+      pa!=null&&pm!=null ? {formula:`E${rowNum}*B${rowNum}`} : null,
+      est]);
     [3,4,5,6].forEach(c => { const cell=row.getCell(c); if(cell.value!=null) cell.numFmt='#,##0.00'; });
-    // Ocultos siempre en gris
     row.eachCell({includeEmpty:true}, cell => {
       cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F5F5'}};
       cell.font={color:{argb:'FF9E9E9E'},italic:true,size:11};
@@ -985,8 +996,13 @@ async function _generarExcel() {
     row.height=22;
   });
 
+  const lastDataRow2 = ocultos.length + 1;
   ws2.addRow([]);
-  const totRow2 = ws2.addRow(['TOTALES', '', totA2, totM2, '', totM2-totA2, '']);
+  const totRow2 = ws2.addRow(['TOTALES', '', null, null, '', null, '']);
+  const totRowNum2 = lastDataRow2 + 2;
+  totRow2.getCell(3).value = { formula: `SUMPRODUCT(B2:B${lastDataRow2},C2:C${lastDataRow2})` };
+  totRow2.getCell(4).value = { formula: `SUMPRODUCT(B2:B${lastDataRow2},D2:D${lastDataRow2})` };
+  totRow2.getCell(6).value = { formula: `D${totRowNum2}-C${totRowNum2}` };
   totRow2.eachCell({includeEmpty:true}, cell => {
     cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.hdrBg}};
     cell.font={bold:true,color:{argb:'FF'+C.hdrFg},size:11};
