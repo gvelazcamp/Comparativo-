@@ -861,19 +861,17 @@ async function _generarExcel() {
   wb.creator = 'FertiLab Comparador';
   wb.created = new Date();
 
-  // Paleta de colores
   const C = {
     hdrBg:'1A56A0', hdrFg:'FFFFFF',
     subeBg:'FFEBEE', subeFg:'C62828',
     bajaBg:'E8F5E9', bajaFg:'2E7D32',
-    igualFg:'607D8B',
-    sinFg:'E65100',
+    igualFg:'607D8B', sinFg:'E65100',
     panelBg:'00695C', panelFg:'FFFFFF',
     asocFg:'1565C0',
     sincotBg:'FFEBEE', sincotFg:'B71C1C',
     rowEven:'F5F9FF', rowOdd:'FFFFFF',
-    totalBg:'1A56A0', totalFg:'FFFFFF',
   };
+  const NUM_FMT = '#,##0.00';
 
   function hdrStyle(ws, row) {
     row.eachCell(cell => {
@@ -888,137 +886,100 @@ async function _generarExcel() {
   function applyRowStyle(row, estado, idx) {
     const even = idx % 2 === 0;
     let bg = even ? C.rowEven : C.rowOdd;
-    let fg = '212121'; let bold = false; let italic = false;
-    if (estado==='panel')   { bg=C.panelBg; fg=C.panelFg; bold=true; }
-    else if (estado==='sube')    { bg=C.subeBg; fg=C.subeFg; bold=true; }
-    else if (estado==='baja')    { bg=C.bajaBg; fg=C.bajaFg; bold=true; }
+    let fg = '212121', bold = false, italic = false;
+    if      (estado==='panel')   { bg=C.panelBg;  fg=C.panelFg;  bold=true; }
+    else if (estado==='sube')    { bg=C.subeBg;   fg=C.subeFg;   bold=true; }
+    else if (estado==='baja')    { bg=C.bajaBg;   fg=C.bajaFg;   bold=true; }
     else if (estado==='igual')   { fg=C.igualFg; }
-    else if (estado==='sinm'||estado==='sinanda'||estado==='sinambos') { fg=C.sinFg; italic=true; }
-    else if (estado==='asoc')    { fg=C.asocFg; italic=true; }
+    else if (['sinm','sinanda','sinambos'].includes(estado)) { fg=C.sinFg; italic=true; }
+    else if (estado==='asoc')    { fg=C.asocFg;   italic=true; }
     else if (estado==='sincot')  { bg=C.sincotBg; fg=C.sincotFg; italic=true; }
     row.eachCell({includeEmpty:true}, cell => {
       cell.fill = {type:'pattern',pattern:'solid',fgColor:{argb:'FF'+bg}};
       cell.font = {color:{argb:'FF'+fg}, bold, italic, size:11};
-      cell.alignment = {vertical:'middle', horizontal:'center'};
+      cell.alignment = {vertical:'middle',horizontal:'center'};
       cell.border = {bottom:{style:'hair',color:{argb:'FFE0E0E0'}}};
     });
-    row.getCell(1).alignment = {vertical:'middle', horizontal:'left'};
+    row.getCell(1).alignment = {vertical:'middle',horizontal:'left'};
     row.height = 22;
   }
 
-  // ── Hoja 1: Vista actual ────────────────────────────────────────────────────
-  const ws = wb.addWorksheet('Comparativa', {views:[{state:'frozen',ySplit:1}]});
-  ws.columns = [
-    {key:'examen', width:44}, {key:'qty',width:16},
-    {key:'pa',width:20}, {key:'pm',width:20},
-    {key:'diu',width:18}, {key:'dit',width:18},
-    {key:'est',width:12}
-  ];
-
-  const hdr = ws.addRow(['Examen','Cantidad 2025','Precio ANDA ($U)','Precio MONTES ($U)','Dif. Unitaria ($U)','Dif. Total ($U)','Estado']);
-  hdrStyle(ws, hdr);
-
-  let totA=0, totM=0;
-  rows.forEach((r,idx) => {
-    const pa=r.Precio_ANDA, pm=r.Precio_MONTES, qty=r.Cantidad_2025||0;
-    let diu='',dit='',est='Sin precio';
-    if(pa!=null&&pm!=null){diu=pm-pa;dit=diu*qty;est=diu>0.01?'↑ SUBE':(diu<-0.01?'↓ BAJA':'= IGUAL');}
-    if(pa!=null) totA+=pa*qty;
-    if(pm!=null) totM+=pm*qty;
-    const estado = _rowEstado(r, panelName);
-    const rowNum = idx + 2; // +1 header +1 base
-    const row = ws.addRow([r.Examen, qty,
-      pa!=null?pa:null, pm!=null?pm:null,
-      pa!=null&&pm!=null ? {formula:`D${rowNum}-C${rowNum}`} : null,
-      pa!=null&&pm!=null ? {formula:`E${rowNum}*B${rowNum}`} : null,
-      est]);
-    // Formato número
-    [3,4,5,6].forEach(c => {
-      const cell = row.getCell(c);
-      if(cell.value!=null) cell.numFmt = '#,##0.00';
-    });
-    applyRowStyle(row, estado, idx);
-  });
-
-  // Fila totales con fórmulas
-  const lastDataRow = rows.length + 1; // +1 por header
-  ws.addRow([]);
-  const totRow = ws.addRow(['TOTALES', '', null, null, '', null, '']);
-  const totRowNum = lastDataRow + 2;
-  // Total ANDA = SUMPRODUCT(B2:B{n} * C2:C{n})
-  totRow.getCell(3).value = { formula: `SUMPRODUCT(B2:B${lastDataRow},C2:C${lastDataRow})` };
-  totRow.getCell(4).value = { formula: `SUMPRODUCT(B2:B${lastDataRow},D2:D${lastDataRow})` };
-  totRow.getCell(6).value = { formula: `${totRowNum>0?'D'+totRowNum:0}-C${totRowNum}` };
-  totRow.eachCell({includeEmpty:true}, cell => {
-    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.hdrBg}};
-    cell.font={bold:true,color:{argb:'FF'+C.hdrFg},size:11};
-    cell.alignment={vertical:'middle',horizontal:'center'};
-  });
-  totRow.getCell(1).alignment={vertical:'middle',horizontal:'left'};
-  [3,4,6].forEach(c => { totRow.getCell(c).numFmt='#,##0.00'; });
-  totRow.height=22;
-
-  // AutoFiltro hoja 1
-  ws.autoFilter = { from:{row:1,column:1}, to:{row:1,column:7} };
-
-  // ── Hoja 2: Ocultos ─────────────────────────────────────────────────────────
-  const ws2 = wb.addWorksheet('Ocultos', {views:[{state:'frozen',ySplit:1}]});
-  ws2.columns = [
-    {key:'examen', width:44}, {key:'qty',width:16},
-    {key:'pa',width:20}, {key:'pm',width:20},
-    {key:'diu',width:18}, {key:'dit',width:18},
-    {key:'est',width:12}
-  ];
-
-  const hdr2 = ws2.addRow(['Examen','Cantidad 2025','Precio ANDA ($U)','Precio MONTES ($U)','Dif. Unitaria ($U)','Dif. Total ($U)','Estado']);
-  hdrStyle(ws2, hdr2);
-
-  let totA2=0, totM2=0;
-  const ocultos = df.filter(r => hiddenSet.has(r.Examen));
-  ocultos.forEach((r, idx) => {
-    const pa=r.Precio_ANDA, pm=r.Precio_MONTES, qty=r.Cantidad_2025||0;
-    let diu='',dit='',est='Sin precio';
-    if(pa!=null&&pm!=null){diu=pm-pa;dit=diu*qty;est=diu>0.01?'↑ SUBE':(diu<-0.01?'↓ BAJA':'= IGUAL');}
-    if(pa!=null) totA2+=pa*qty;
-    if(pm!=null) totM2+=pm*qty;
-    const rowNum = idx + 2;
-    const row = ws2.addRow([r.Examen, qty,
-      pa!=null?pa:null, pm!=null?pm:null,
-      pa!=null&&pm!=null ? {formula:`D${rowNum}-C${rowNum}`} : null,
-      pa!=null&&pm!=null ? {formula:`E${rowNum}*B${rowNum}`} : null,
-      est]);
-    [3,4,5,6].forEach(c => { const cell=row.getCell(c); if(cell.value!=null) cell.numFmt='#,##0.00'; });
+  function totStyle(row) {
     row.eachCell({includeEmpty:true}, cell => {
-      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F5F5'}};
-      cell.font={color:{argb:'FF9E9E9E'},italic:true,size:11};
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.hdrBg}};
+      cell.font={bold:true,color:{argb:'FF'+C.hdrFg},size:11};
       cell.alignment={vertical:'middle',horizontal:'center'};
-      cell.border={bottom:{style:'hair',color:{argb:'FFE0E0E0'}}};
     });
     row.getCell(1).alignment={vertical:'middle',horizontal:'left'};
     row.height=22;
-  });
+  }
 
-  const lastDataRow2 = ocultos.length + 1;
-  ws2.addRow([]);
-  const totRow2 = ws2.addRow(['TOTALES', '', null, null, '', null, '']);
-  const totRowNum2 = lastDataRow2 + 2;
-  totRow2.getCell(3).value = { formula: `SUMPRODUCT(B2:B${lastDataRow2},C2:C${lastDataRow2})` };
-  totRow2.getCell(4).value = { formula: `SUMPRODUCT(B2:B${lastDataRow2},D2:D${lastDataRow2})` };
-  totRow2.getCell(6).value = { formula: `D${totRowNum2}-C${totRowNum2}` };
-  totRow2.eachCell({includeEmpty:true}, cell => {
-    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.hdrBg}};
-    cell.font={bold:true,color:{argb:'FF'+C.hdrFg},size:11};
-    cell.alignment={vertical:'middle',horizontal:'center'};
-  });
-  totRow2.getCell(1).alignment={vertical:'middle',horizontal:'left'};
-  [3,4,6].forEach(c => { totRow2.getCell(c).numFmt='#,##0.00'; });
-  totRow2.height=22;
+  function buildSheet(wb, sheetName, dataRows, isOcultos) {
+    const ws = wb.addWorksheet(sheetName, {views:[{state:'frozen',ySplit:1}]});
+    ws.columns = [
+      {key:'examen',width:44},{key:'qty',width:16},
+      {key:'pa',width:20},   {key:'pm',width:20},
+      {key:'diu',width:18},  {key:'dit',width:18},
+      {key:'est',width:16}
+    ];
 
-  ws2.autoFilter = { from:{row:1,column:1}, to:{row:1,column:7} };
+    const hdr = ws.addRow(['Examen','Cantidad 2025','Precio ANDA ($U)','Precio MONTES ($U)','Dif. Unitaria ($U)','Dif. Total ($U)','Estado']);
+    hdrStyle(ws, hdr);
 
-  // ── Descargar ────────────────────────────────────────────────────────────────
+    let totA = 0, totM = 0;
+
+    dataRows.forEach((r, idx) => {
+      const pa  = r.Precio_ANDA;
+      const pm  = r.Precio_MONTES;
+      const qty = r.Cantidad_2025 || 0;
+
+      // Valores calculados directamente — NO usar {formula:...} en ExcelJS
+      // porque no se evaluan sin el campo `result` y salen vacios
+      const diu = (pa != null && pm != null) ? (pm - pa)  : null;
+      const dit = (diu != null)              ? (diu * qty) : null;
+
+      let est = 'Sin precio';
+      if (diu != null) est = diu > 0.01 ? '↑ SUBE' : (diu < -0.01 ? '↓ BAJA' : '= IGUAL');
+      if (pa != null) totA += pa * qty;
+      if (pm != null) totM += pm * qty;
+
+      const row = ws.addRow([r.Examen, qty,
+        pa != null ? pa : null,
+        pm != null ? pm : null,
+        diu, dit, est]);
+
+      [3,4,5,6].forEach(c => {
+        const cell = row.getCell(c);
+        if (cell.value != null) cell.numFmt = NUM_FMT;
+      });
+
+      if (isOcultos) {
+        row.eachCell({includeEmpty:true}, cell => {
+          cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF5F5F5'}};
+          cell.font={color:{argb:'FF9E9E9E'},italic:true,size:11};
+          cell.alignment={vertical:'middle',horizontal:'center'};
+          cell.border={bottom:{style:'hair',color:{argb:'FFE0E0E0'}}};
+        });
+        row.getCell(1).alignment={vertical:'middle',horizontal:'left'};
+        row.height = 22;
+      } else {
+        applyRowStyle(row, _rowEstado(r, panelName), idx);
+      }
+    });
+
+    // TOTALES con valores acumulados — sin formulas circulares
+    ws.addRow([]);
+    const totRow = ws.addRow(['TOTALES', '', totA, totM, '', totM - totA, '']);
+    [3,4,6].forEach(c => { totRow.getCell(c).numFmt = NUM_FMT; });
+    totStyle(totRow);
+    ws.autoFilter = { from:{row:1,column:1}, to:{row:1,column:7} };
+  }
+
+  buildSheet(wb, 'Comparativa', rows, false);
+  buildSheet(wb, 'Ocultos', df.filter(r => hiddenSet.has(r.Examen)), true);
+
   const fecha = new Date().toISOString().slice(0,10);
-  const buf = await wb.xlsx.writeBuffer();
+  const buf  = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1026,8 +987,6 @@ async function _generarExcel() {
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(a.href);
 }
-
-
 function exportarCSV() {
   const cols = ['Examen','Cantidad_2025','Precio_ANDA','Precio_MONTES','Panel_Asociado','Sin_Cotizar'];
   let csv = '\uFEFF' + cols.join(',') + '\r\n';
