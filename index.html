@@ -215,6 +215,26 @@ html,body{height:100%}
   </div>
 </div>
 
+<!-- MODAL OBSERVACION -->
+<div class="modal-overlay" id="modal-obs">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hdr" id="mobs-hdr" style="background:#6A1B9A">📝 Observación de precio</div>
+    <div class="modal-body">
+      <div style="font-size:13px;font-weight:700;color:#1A237E;margin-bottom:4px" id="mobs-exam"></div>
+      <div class="ref-text" id="mobs-tipo"></div>
+      <div style="margin-top:10px">
+        <label style="font-weight:700;font-size:13px;display:block;margin-bottom:6px">Observación (aparece en lugar del precio):</label>
+        <textarea id="mobs-input" rows="3" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px;resize:vertical" placeholder="Ej: Ya costeado en PANEL HEPATICO, Incluido en HEMOGRAMA..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-green" onclick="saveObs()">✔ Guardar</button>
+      <button class="btn" style="background:#6A1B9A;color:#fff" onclick="clearObs()">🗑 Quitar obs.</button>
+      <button class="btn btn-gray" onclick="closeModal('modal-obs')">✖ Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL CANTIDAD -->
 <div class="modal-overlay" id="modal-cantidad">
   <div class="modal" style="max-width:440px">
@@ -443,8 +463,8 @@ function render() {
     const pa = r.Precio_ANDA, pm = r.Precio_MONTES;
     const _pdVals = isPanel && PANEL_DESGLOSE[r.Examen] ? Object.values(PANEL_DESGLOSE[r.Examen]) : null;
     const qty = (_pdVals && _pdVals.length) ? Math.min(..._pdVals) : (r.Cantidad_2025||0);
-    const paS = pa != null ? `$U ${fmt(pa)}` : '(sin precio)';
-    const pmS = pm != null ? `$U ${fmt(pm)}` : '(sin precio)';
+    const paS = pa != null ? `$U ${fmt(pa)}` : (r.Obs_ANDA ? `<span style="color:#6A1B9A;font-style:italic;font-size:11px" title="${r.Obs_ANDA}">📝 ${r.Obs_ANDA}</span>` : '(sin precio)');
+    const pmS = pm != null ? `$U ${fmt(pm)}` : (r.Obs_MONTES ? `<span style="color:#6A1B9A;font-style:italic;font-size:11px" title="${r.Obs_MONTES}">📝 ${r.Obs_MONTES}</span>` : '(sin precio)');
     let diuS = '—', ditS = '—', est = 'Sin precio', cls = 'sin';
     if (pa != null && pm != null) {
       const du = pm - pa, dt = du * qty;
@@ -555,6 +575,9 @@ function showCtxMenu(e, examen, isPanel) {
     html += `<div class="ctx-item" onclick="borrarPrecio('${esc(examen)}','ANDA')">🗑️ Borrar precio ANDA</div>`;
     html += `<div class="ctx-item" onclick="borrarPrecio('${esc(examen)}','MONTES')">🗑️ Borrar precio MONTES</div>`;
     html += `<div class="ctx-sep"></div>`;
+    html += `<div class="ctx-item" onclick="openModalObs('${esc(examen)}','ANDA')">📝 Observación precio ANDA</div>`;
+    html += `<div class="ctx-item" onclick="openModalObs('${esc(examen)}','MONTES')">📝 Observación precio MONTES</div>`;
+    html += `<div class="ctx-sep"></div>`;
     html += `<div class="ctx-item" onclick="openModalCantidad('${esc(examen)}')">🔢 Cambiar cantidad</div>`;
     html += `<div class="ctx-sep"></div>`;
     html += `<div class="ctx-item" onclick="openModalAsocPrecios('${esc(examen)}')">🔗 Asociar precios de otro examen...</div>`;
@@ -637,6 +660,38 @@ function savePrecio() {
     if (_precioTipo === 'ANDA') row.Precio_ANDA = n; else row.Precio_MONTES = n;
   }
   saveState(); closeModal('modal-precio'); render();
+}
+
+// ── OBSERVACION MODAL ────────────────────────────────────────────────────────
+let _obsExamen = null, _obsTipo = null;
+function openModalObs(examen, tipo) {
+  hideCtxMenu();
+  _obsExamen = examen; _obsTipo = tipo;
+  const row = df.find(r => r.Examen === examen);
+  const color = tipo === 'ANDA' ? '#1565C0' : '#6A1B9A';
+  document.getElementById('mobs-hdr').style.background = color;
+  document.getElementById('mobs-hdr').textContent = `📝 Observación precio ${tipo}`;
+  document.getElementById('mobs-exam').textContent = examen;
+  document.getElementById('mobs-tipo').textContent = `Esta observación aparece en la columna Precio ${tipo} cuando no hay precio cargado.`;
+  const obsActual = tipo === 'ANDA' ? (row.Obs_ANDA || '') : (row.Obs_MONTES || '');
+  document.getElementById('mobs-input').value = obsActual;
+  openModal('modal-obs');
+  setTimeout(() => document.getElementById('mobs-input').focus(), 100);
+}
+function saveObs() {
+  const val = document.getElementById('mobs-input').value.trim();
+  const row = df.find(r => r.Examen === _obsExamen);
+  if (!row) return;
+  if (_obsTipo === 'ANDA') row.Obs_ANDA = val || null;
+  else row.Obs_MONTES = val || null;
+  saveState(); closeModal('modal-obs'); render();
+}
+function clearObs() {
+  const row = df.find(r => r.Examen === _obsExamen);
+  if (!row) return;
+  if (_obsTipo === 'ANDA') row.Obs_ANDA = null;
+  else row.Obs_MONTES = null;
+  saveState(); closeModal('modal-obs'); render();
 }
 
 // ── BORRAR PRECIO ─────────────────────────────────────────────────────────────
@@ -770,7 +825,9 @@ function saveState() {
       Precio_MONTES: r.Precio_MONTES,
       Cantidad_2025: r.Cantidad_2025,
       Panel_Asociado: r.Panel_Asociado,
-      Sin_Cotizar: r.Sin_Cotizar
+      Sin_Cotizar: r.Sin_Cotizar,
+      Obs_ANDA: r.Obs_ANDA || null,
+      Obs_MONTES: r.Obs_MONTES || null
     }));
     localStorage.setItem('comparador_state', JSON.stringify({
       changes,
@@ -918,10 +975,10 @@ async function _generarExcel() {
       {key:'examen',width:44},{key:'qty',width:16},
       {key:'pa',width:20},   {key:'pm',width:20},
       {key:'diu',width:18},  {key:'dit',width:18},
-      {key:'est',width:16}
+      {key:'est',width:16},  {key:'oa',width:32},  {key:'om',width:32}
     ];
 
-    const hdr = ws.addRow(['Examen','Cantidad 2025','Precio ANDA ($U)','Precio MONTES ($U)','Dif. Unitaria ($U)','Dif. Total ($U)','Estado']);
+    const hdr = ws.addRow(['Examen','Cantidad 2025','Precio ANDA ($U)','Precio MONTES ($U)','Dif. Unitaria ($U)','Dif. Total ($U)','Estado','Obs. ANDA','Obs. MONTES']);
     hdrStyle(ws, hdr);
 
     let totA = 0, totM = 0;
@@ -930,7 +987,7 @@ async function _generarExcel() {
       const pa  = r.Precio_ANDA;
       const pm  = r.Precio_MONTES;
       const qty = r.Cantidad_2025 || 0;
-      const rn  = idx + 2; // fila Excel (1=encabezado)
+      const rn  = idx + 2;
       const diu = (pa != null && pm != null) ? (pm - pa)  : null;
       const dit = (diu != null)              ? (diu * qty) : null;
 
@@ -939,7 +996,6 @@ async function _generarExcel() {
       if (pa != null) totA += pa * qty;
       if (pm != null) totM += pm * qty;
 
-      // formula + result: muestra el valor calculado Y permite recalculo al editar C o D
       const fDiu = {formula:`IF(AND(ISNUMBER(C${rn}),ISNUMBER(D${rn})),D${rn}-C${rn},"")`, result: diu ?? ''};
       const fDit = {formula:`IF(ISNUMBER(E${rn}),E${rn}*B${rn},"")`,                        result: dit ?? ''};
       const fEst = {formula:`IF(ISNUMBER(E${rn}),IF(E${rn}>0.01,"↑ SUBE",IF(E${rn}<-0.01,"↓ BAJA","= IGUAL")),"Sin precio")`, result: est};
@@ -947,11 +1003,19 @@ async function _generarExcel() {
       const row = ws.addRow([r.Examen, qty,
         pa != null ? pa : null,
         pm != null ? pm : null,
-        fDiu, fDit, fEst]);
+        fDiu, fDit, fEst,
+        r.Obs_ANDA || null,
+        r.Obs_MONTES || null]);
 
       [3,4,5,6].forEach(c => {
         const cell = row.getCell(c);
         if (cell.value != null) cell.numFmt = NUM_FMT;
+      });
+
+      // Colorear obs en lila si tienen valor
+      [8,9].forEach(c => {
+        const cell = row.getCell(c);
+        if (cell.value) cell.font = {color:{argb:'FF6A1B9A'}, italic:true, size:10};
       });
 
       if (isOcultos) {
@@ -965,23 +1029,25 @@ async function _generarExcel() {
         row.height = 22;
       } else {
         applyRowStyle(row, _rowEstado(r, panelName), idx);
+        [8,9].forEach(c => {
+          if (row.getCell(c).value) row.getCell(c).font = {color:{argb:'FF6A1B9A'}, italic:true, size:10};
+        });
       }
     });
 
-    // TOTALES con SUM — se actualizan si cambia algun precio
     const lastDataRow = dataRows.length + 1;
     ws.addRow([]);
     const totRow = ws.addRow([
       'TOTALES', '',
-      {formula:`SUM(C2:C${lastDataRow})`, result: totA},
-      {formula:`SUM(D2:D${lastDataRow})`, result: totM},
+      {formula:`SUMPRODUCT((C2:C${lastDataRow})*(B2:B${lastDataRow}))`, result: totA},
+      {formula:`SUMPRODUCT((D2:D${lastDataRow})*(B2:B${lastDataRow}))`, result: totM},
       '',
       {formula:`SUM(F2:F${lastDataRow})`, result: totM - totA},
-      ''
+      '','',''
     ]);
     [3,4,6].forEach(c => { totRow.getCell(c).numFmt = NUM_FMT; });
     totStyle(totRow);
-    ws.autoFilter = { from:{row:1,column:1}, to:{row:1,column:7} };
+    ws.autoFilter = { from:{row:1,column:1}, to:{row:1,column:9} };
   }
 
   buildSheet(wb, 'Comparativa', rows, false);
@@ -997,7 +1063,7 @@ async function _generarExcel() {
   document.body.removeChild(a); URL.revokeObjectURL(a.href);
 }
 function exportarCSV() {
-  const cols = ['Examen','Cantidad_2025','Precio_ANDA','Precio_MONTES','Panel_Asociado','Sin_Cotizar'];
+  const cols = ['Examen','Cantidad_2025','Precio_ANDA','Precio_MONTES','Panel_Asociado','Sin_Cotizar','Obs_ANDA','Obs_MONTES'];
   let csv = '\uFEFF' + cols.join(',') + '\r\n';
   df.forEach(r => {
     const row = cols.map(c => {
