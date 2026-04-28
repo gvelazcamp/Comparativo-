@@ -383,6 +383,8 @@ document.addEventListener('DOMContentLoaded', () => {
   df.forEach(r => {
     if(r.Cantidad_2025 === 0 && !r.Panel_Asociado) hiddenSet.add(r.Examen);
   });
+  // Si hay override embebido, reemplazar hiddenSet completamente
+  if (window.__OVERRIDE_HIDDEN__) hiddenSet = new Set(window.__OVERRIDE_HIDDEN__);
 
   updateBadges();
   render();
@@ -843,12 +845,12 @@ function saveState() {
 // ── EXPORTAR HTML CON MIS DATOS ───────────────────────────────────────────────
 async function exportarHTML() {
   try {
-    const res = await fetch(location.href);
+    const res = await fetch(location.href + '?nocache=' + Date.now(), {cache: 'no-store'});
     let html = await res.text();
 
     // Inyectar override ANTES del </head> con los datos actuales en memoria
     // Esto tiene prioridad sobre RAW_DATA embebido y sobre localStorage
-    const override = '<script>window.__OVERRIDE_DATA__ = ' + JSON.stringify(df) + '; window.__NO_LOCALSTORAGE__ = true;<\/script>';
+    const override = '<script>window.__OVERRIDE_DATA__ = ' + JSON.stringify(df) + '; window.__OVERRIDE_HIDDEN__ = ' + JSON.stringify([...hiddenSet]) + '; window.__NO_LOCALSTORAGE__ = true;<\/script>';
     html = html.replace('</head>', override + '\n</head>');
 
     // Neutralizar localStorage si __NO_LOCALSTORAGE__ está activo
