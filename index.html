@@ -136,6 +136,7 @@ html,body{height:100%}
 <div id="export-bar">
   <button class="btn btn-blue" onclick="exportarCSV()">💾 Descargar CSV actualizado</button>
   <button class="btn btn-green" onclick="exportarExcel()">📊 Exportar a Excel</button>
+  <button class="btn" style="background:#6A1B9A;color:#fff" onclick="exportarHTML()" title="Genera un index.html con todos tus cambios para subir a GitHub">📤 Exportar HTML con mis datos</button>
 </div>
 
 <!-- PANEL BAR -->
@@ -837,6 +838,31 @@ function saveState() {
     document.getElementById('saved').textContent = `✔ Guardado ${now.toLocaleTimeString('es-UY')}`;
   } catch(e) {}
 }
+// ── EXPORTAR HTML CON MIS DATOS ───────────────────────────────────────────────
+function exportarHTML() {
+  const dfJson = JSON.stringify(df, null, 0);
+  const html = document.documentElement.outerHTML;
+  const updated = html.replace(
+    /const df = \[[\s\S]*?\];(?=\s*\n)/,
+    `const df = ${dfJson};`
+  );
+  if (updated === html) {
+    alert('No se pudo encontrar el bloque df. Contactá al desarrollador.');
+    return;
+  }
+  // Neutralizar localStorage para que no sobreescriba los datos embebidos
+  const clean = updated.replace(
+    /localStorage\.getItem\('comparador_state'\)/,
+    `null /* datos embebidos */`
+  );
+  const blob = new Blob([clean], {type:'text/html;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'index.html';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(a.href);
+}
+
 function guardarManual() {
   saveState();
   alert('Cambios guardados en el navegador.');
