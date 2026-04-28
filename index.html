@@ -988,16 +988,31 @@ async function _generarExcel() {
   document.body.removeChild(a); URL.revokeObjectURL(a.href);
 }
 function exportarCSV() {
-  const cols = ['Examen','Cantidad_2025','Precio_ANDA','Precio_MONTES','Panel_Asociado','Sin_Cotizar'];
-  let csv = '\uFEFF' + cols.join(',') + '\r\n';
-  df.forEach(r => {
-    const row = cols.map(c => {
-      let v = r[c];
-      if (v == null) return '';
-      v = String(v);
-      if (v.includes(',') || v.includes('"') || v.includes('\n')) v = '"' + v.replace(/"/g,'""') + '"';
-      return v;
-    });
+  // Columnas: A=Examen B=Cantidad C=PrecioANDA D=PrecioMONTES E=DifUnitaria F=DifTotal G=Estado H=Panel I=SinCotizar
+  // E,F,G llevan formulas Excel — al cambiar C o D en Excel se recalculan automaticamente
+  const hdr = ['Examen','Cantidad_2025','Precio_ANDA','Precio_MONTES','Dif_Unitaria','Dif_Total','Estado','Panel_Asociado','Sin_Cotizar'];
+  function esc(v) {
+    if (v == null) return '';
+    v = String(v);
+    if (v.includes(',') || v.includes('"') || v.includes('\n')) v = '"' + v.replace(/"/g,'""') + '"';
+    return v;
+  }
+  let csv = '\uFEFF' + hdr.join(',') + '\r\n';
+  df.forEach((r, idx) => {
+    const n = idx + 2; // fila Excel (1=encabezado)
+    // Formulas CSV-escapadas: "" dentro de campo comillado = " en la formula real
+    const fDiu = `"=IF(AND(ISNUMBER(C${n}),ISNUMBER(D${n})),D${n}-C${n},"""")"`;
+    const fDit = `"=IF(ISNUMBER(E${n}),E${n}*B${n},"""")"`;
+    const fEst = `"=IF(ISNUMBER(E${n}),IF(E${n}>0.01,""SUBE"",IF(E${n}<-0.01,""BAJA"",""IGUAL"")),""Sin precio"")"`;
+    const row = [
+      esc(r.Examen),
+      r.Cantidad_2025 != null ? r.Cantidad_2025 : '',
+      r.Precio_ANDA   != null ? r.Precio_ANDA   : '',
+      r.Precio_MONTES != null ? r.Precio_MONTES : '',
+      fDiu, fDit, fEst,
+      esc(r.Panel_Asociado),
+      r.Sin_Cotizar ? 'TRUE' : ''
+    ];
     csv += row.join(',') + '\r\n';
   });
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
